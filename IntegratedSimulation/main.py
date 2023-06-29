@@ -1,17 +1,7 @@
-
-from SphericalFEM import *
-import matplotlib.pyplot as plt
-
-import numpy as np
-import scipy.optimize
-import pandas as pd
-from scipy.signal import savgol_filter
-
-from HelpFile import *
 from Quenching import *
-from Tempering import *
-from Carbonitriding import *
-from  Post_processing import *
+#from Carbonitriding import *
+from Post_processing import *
+from IntegratedSimulation.Solvers.TimedepSolver import *
 
 
 def start():
@@ -92,8 +82,8 @@ def start():
         checkcalculation()
 
         createmesh(modelvar)
-        runcarbonitriding(modelvar)
-        runquenching(modelvar)
+        #runcarbonitriding(modelvar)
+        #runquenching(modelvar)
         # runtempering(modelvar)
         # runfatiguetest(modelvar)
         # runplot(modelvar)
@@ -128,5 +118,9 @@ def start():
         print(K)
         K = readK(modelvar)
         print(K)
+    elif inputvariable == "t":
+        coupled_solver(modelvar)
+
+
 if __name__ == "__main__":
     start()

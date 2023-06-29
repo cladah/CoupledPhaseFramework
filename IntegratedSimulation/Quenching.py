@@ -1,6 +1,4 @@
-import numpy as np
-import pandas as pd
-from SphericalFEM import *
+from IntegratedSimulation.Solvers.SphericalFEM import *
 
 def modelfitting(model,x,y):
     if model == "KM":
