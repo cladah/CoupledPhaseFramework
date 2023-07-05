@@ -2,7 +2,11 @@ from Quenching import *
 #from Carbonitriding import *
 from Post_processing import *
 from IntegratedSimulation.Solvers.TimedepSolver import *
+import subprocess
+import docker
+import h5py
 
+import time
 
 def start():
     # Model variables stored in a dictionary
@@ -119,7 +123,53 @@ def start():
         K = readK(modelvar)
         print(K)
     elif inputvariable == "t":
-        coupled_solver(modelvar)
+        client = docker.from_env()
+        #command = ['quay.io/fenicsproject/stable']
+        fenicscont = client.containers.run('quay.io/fenicsproject/stable',
+                              name='fenicscontainer',
+                              auto_remove=True,
+                              detach=True,
+                              ports={8000:8000},
+                              #volumes =['C:/Users/ClasD/Documents/Docker/CoupledPhaseFramework:/home/fenics/shared'],
+                              volumes=['C:/Users/ClasD/OneDrive - KTH/KTH_SKF/Integrated_simulations/Code:/home/fenics/shared'],
+                              working_dir='/home/fenics/shared',
+                              command=['python3 FEMFCS.py'])
+        #fenicscont.exec_run(cmd=['python3 my-code.py'])
+        for line in fenicscont.logs(stream=True):
+            print(str(line).strip('\\n'))
+
+        with h5py.File('C:/Users/ClasD/OneDrive - KTH/KTH_SKF/Integrated_simulations/Code/elasticity_results.h5', "r") as f:
+            print("Keys: %s" % f.keys())
+            a_group_key = list(f.keys())[0]
+            print(f[a_group_key][0])
+    elif inputvariable =='y':
+        with h5py.File('C:/Users/ClasD/OneDrive - KTH/KTH_SKF/Integrated_simulations/Code/elasticity_results.h5', "r") as f:
+            print("Keys: %s" % f.keys())
+            a_group_key = list(f.keys())[0]
+            b = f[a_group_key]['0']
+            print(b['mesh'].keys)
+
+            import nexusformat.nexus as nx
+            f = nx.nxload('C:/Users/ClasD/OneDrive - KTH/KTH_SKF/Integrated_simulations/Code/elasticity_results.h5')
+            print(f.tree)
+            #f = open('./sh_bin.tar', 'wb')
+        #bits, stat = fenicscont.get_archive('.')
+        #print(stat)
+        #for chunk in bits:
+        #    f.write(chunk)
+        #f.close()
+        #client.close()
+
+        #process = subprocess.Popen(['ehco','a'], shell=True)
+        #os.system('echo a')
+        #dockercmd = str('winpty docker run -p 8000:8000 -ti -v C:/Users/ClasD/Documents/Docker/CoupledPhaseFramework:/home/fenics/shared quay.io/fenicsproject/stable "python3 my-code.py"')
+        #subprocess.run(["powershell", "-Command", dockercmd],shell=True)
+        #subprocess.run(["powershell", "-Command", dockercmd], shell=True)
+        #subprocess.call(dockercmd, shell=True)
+        #time.sleep(10)
+        #subprocess.call('exit', shell=True)
+          #coupled_solver(modelvar)
+
 
 
 if __name__ == "__main__":

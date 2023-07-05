@@ -3,7 +3,7 @@ def heatequation(T,r):
     return y
 
 def heatsolver(modelvar,mesh,ti,dt,Ti,bcth):
-    from BackwardEulerClas import *
+    #from BackwardEulerClas import *
     yi = eulerbackwardstep(heatequation(), modelvar, mesh, ti, dt, Ti, bcth)
     return yi
 
