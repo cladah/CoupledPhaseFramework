@@ -125,7 +125,7 @@ def start():
     elif inputvariable == "t":
         client = docker.from_env()
         #command = ['quay.io/fenicsproject/stable']
-        fenicscont = client.containers.run('quay.io/fenicsproject/stable',
+        fenicscont = client.containers.run('dolfinx/dolfinx:stable',
                               name='fenicscontainer',
                               auto_remove=True,
                               detach=True,
@@ -133,15 +133,10 @@ def start():
                               #volumes =['C:/Users/ClasD/Documents/Docker/CoupledPhaseFramework:/home/fenics/shared'],
                               volumes=['C:/Users/ClasD/OneDrive - KTH/KTH_SKF/Integrated_simulations/Code:/home/fenics/shared'],
                               working_dir='/home/fenics/shared',
-                              command=['python3 FEMFCS.py'])
+                              command=['python3 HeatsolverFCS.py'])
         #fenicscont.exec_run(cmd=['python3 my-code.py'])
         for line in fenicscont.logs(stream=True):
-            print(str(line).strip('\\n'))
-
-        with h5py.File('C:/Users/ClasD/OneDrive - KTH/KTH_SKF/Integrated_simulations/Code/elasticity_results.h5', "r") as f:
-            print("Keys: %s" % f.keys())
-            a_group_key = list(f.keys())[0]
-            print(f[a_group_key][0])
+            print(str(line))
     elif inputvariable =='y':
         with h5py.File('C:/Users/ClasD/OneDrive - KTH/KTH_SKF/Integrated_simulations/Code/elasticity_results.h5', "r") as f:
             print("Keys: %s" % f.keys())
@@ -149,9 +144,11 @@ def start():
             b = f[a_group_key]['0']
             print(b['mesh'].keys)
 
-            import nexusformat.nexus as nx
-            f = nx.nxload('C:/Users/ClasD/OneDrive - KTH/KTH_SKF/Integrated_simulations/Code/elasticity_results.h5')
-            print(f.tree)
+            h5_tree(f)
+            print(f['Mesh']['0']['mesh']['geometry'][...])
+            print(f['Mesh']['0']['mesh']['topology'][...])
+            print(f['VisualisationVector']['1'][...])
+
             #f = open('./sh_bin.tar', 'wb')
         #bits, stat = fenicscont.get_archive('.')
         #print(stat)

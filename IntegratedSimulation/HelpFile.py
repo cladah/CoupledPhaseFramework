@@ -95,3 +95,21 @@ def renameResultfile():
     cachename = "Result_" + now + ".hdf5"
     with h5py.File(cachename, "w") as f:
         CNcurves = f.create_dataset("CNcurves",data=[1,2,3])
+
+def h5_tree(val, pre=''):
+    items = len(val)
+    for key, val in val.items():
+        items -= 1
+        if items == 0:
+            # the last item
+            if type(val) == h5py._hl.group.Group:
+                print(pre + '└── ' + key)
+                h5_tree(val, pre+'    ')
+            else:
+                print(pre + '└── ' + key + ' (%d)' % len(val))
+        else:
+            if type(val) == h5py._hl.group.Group:
+                print(pre + '├── ' + key)
+                h5_tree(val, pre+'│   ')
+            else:
+                print(pre + '├── ' + key + ' (%d)' % len(val))
