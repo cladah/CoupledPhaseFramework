@@ -12,7 +12,7 @@ domain = mesh.create_interval(MPI.COMM_WORLD, nx=50, points=(0.0, 1.0))
 # Function space over domain
 V = fem.FunctionSpace(domain, ("Lagrange", 1)) #Lagrange
 
-# Material parameters
+# Material parameters #--------------------------------- Read from file saved under /Solvers
 E = fem.Constant(domain, 1e5)
 nu = fem.Constant(domain, (0.3))
 rho_g = 1e-3
@@ -37,7 +37,6 @@ circumferencedofs = fem.locate_dofs_topological(V=V, entity_dim=0, entities=circ
 #circumference_ds = ufl.Measure("dp", subdomain_data=circumferencedofs)
 
 p = fem.Constant(domain, ScalarType(-10))
-
 
 f = fem.Function(V)
 dofs = fem.locate_dofs_geometrical(V, lambda x: np.isclose(x.T, 1.0))

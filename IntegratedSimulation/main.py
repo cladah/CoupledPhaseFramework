@@ -121,26 +121,6 @@ def start():
         #createResults(modelvar, results['displacement'])
         #plotstrain(modelvar)
 
-    elif inputvariable == "t":
-        client = docker.from_env()
-        #command = ['quay.io/fenicsproject/stable']
-        fenicscont = client.containers.run('dolfinx/dolfinx:latest',
-                              name='new',
-                              auto_remove=True,
-                              detach=True,
-                              #ports={8888:8888},
-                              entrypoint='bash',
-                              #volumes =['C:/Users/ClasD/Documents/Docker/CoupledPhaseFramework:/home/fenics/shared'],
-                              volumes=['C:/Users/ClasD/Documents/Docker/CoupledPhaseFramework:/root/'],
-                              working_dir='/root/',
-                              #working_dir='/home/fenics/shared',
-                              #command=['ls -a'])
-                              command=['echo 1'])
-        #fenicscont.exec_run(cmd=['python3 my-code.py'])
-
-        for line in fenicscont.logs(stream=True):
-            print(str(line))
-        #client.close()
     elif inputvariable == 'y':
         rundocker(modelvar)
 
