@@ -1,19 +1,18 @@
 import docker
-def rundocker():
-    client = docker.from_env()
-    for container in client.containers.list():
-      container.stop()
-
-    fenicscont = client.containers.run('dolfinx/dolfinx:stable',
-        #name='test',
-        auto_remove=True,
-        detach=True,
-        entrypoint='bash',
-        volumes=['C:/Users/ClasD/Documents/Docker/CoupledPhaseFramework:/root/'],
-        working_dir='/root/',
-        command=['echo FEMFCS.py'])
-
-    #fenicscont.exec_run(cmd=['python3', 'my-code.py'])
-
-    for line in fenicscont.logs(stream=True):
-        print(str(line))
+def rundocker(modelvar):
+    if modelvar['Coupling'] == 0:
+        client = docker.from_env()
+        #container = client.containers.run('dolfinx/dolfinx:stable', ["python3", "FEMFCSx.py"], detach=True,
+                                            #auto_remove=True,
+                                            #volumes=['C:/Users/ClasD/Documents/GitHub/coupledfenicsx:/root/shared'],
+                                            #working_dir='/root/shared')
+        container = client.containers.run('dolfinx/dolfinx:stable', ["python3", "Testsolver.py"],
+                                          detach=True,
+                                          auto_remove=True,
+                                          volumes=['C:/Users/ClasD/Documents/GitHub/CoupledPhaseFramework/IntegratedSimulation/Solvers:/root/shared'],
+                                          working_dir='/root/shared',
+                                          name='fenicscxcont')
+        for log in container.logs(stream=True, stdout=True, stderr=True):
+            print(log)
+    else:
+        raise KeyError('Coupled solvers not implemented')

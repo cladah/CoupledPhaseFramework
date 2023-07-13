@@ -11,6 +11,8 @@ import time
 def start():
     # Model variables stored in a dictionary
     modelvar = dict()
+    # --------------- Material ------------------#
+    modelvar['Coupling'] = 0                        # 0 - Uncoupled solvers
 
     # --------------- Material ------------------#
     modelvar["dependentmat"] = "Fe"
@@ -140,7 +142,7 @@ def start():
             print(str(line))
         #client.close()
     elif inputvariable == 'y':
-        rundocker()
+        rundocker(modelvar)
 
 if __name__ == "__main__":
     start()
