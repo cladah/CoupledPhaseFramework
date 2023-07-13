@@ -1,11 +1,11 @@
 from Quenching import *
 #from Carbonitriding import *
 from Post_processing import *
-from IntegratedSimulation.Solvers.TimedepSolver import *
 import subprocess
 import docker
 import h5py
 from HelpFile import Material
+from Solvers.RunDocker import *
 import time
 
 def start():
@@ -74,7 +74,7 @@ def start():
     modelvar["programs"] = programs
 
     # --------------- Time ------------------#
-    modelvar["CNtime"] = 1  # Time for carbonitration i [h]
+    modelvar["CNtime"] = 1                  # Time for carbonitration [h]
     modelvar["quenchingtime"] = 60 / 3600   # Quenching calculation time [h]
     modelvar["temperingtime"] = 1           # time at tempering temperature [h]
 
@@ -98,7 +98,7 @@ def start():
             print("Modelinput changed recalculation matrixes")
 
         RHS = 1
-        sphericalsolver(RHS, modelvar)
+        #sphericalsolver(RHS, modelvar)
 
         # --------------- Adding new info to cache ------------------#
         savetocache("info",
@@ -110,7 +110,7 @@ def start():
         createcachfile(modelvar)
         createmesh(modelvar)
 
-        [displacement, err] = sphericalsolver(1,modelvar)
+        #[displacement, err] = sphericalsolver(1,modelvar)
         saveresult("displacement",displacement)
         plotstrain(modelvar)
         plotdisplacement(modelvar)
@@ -139,6 +139,8 @@ def start():
         for line in fenicscont.logs(stream=True):
             print(str(line))
         #client.close()
+    elif inputvariable == 'y':
+        rundocker()
 
 if __name__ == "__main__":
     start()

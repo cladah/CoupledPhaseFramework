@@ -1,4 +1,4 @@
-from IntegratedSimulation.Solvers.SphericalFEM import *
+#from IntegratedSimulation.Solvers.SphericalFEM import *
 
 def modelfitting(model,x,y):
     if model == "KM":
@@ -20,5 +20,6 @@ def runquenching(modelvar):
         pass
     else:
         if modelvar["programs"]["FEM"] == "1Dsphere":
-            sphericalsolver(1,modelvar)
+            #sphericalsolver(1,modelvar)
+            pass
 
