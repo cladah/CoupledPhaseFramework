@@ -1,5 +1,5 @@
 from Quenching import *
-#from Carbonitriding import *
+from Carbonitriding import *
 from Post_processing import *
 import subprocess
 import docker
@@ -70,9 +70,9 @@ def start():
     programs = dict()
     programs['Diff'] = 'TC'                 # TC, Comsol, FCSx_1Dsph, FCSx_1Daxi
     programs['CCT'] = 'TC'                  # TC, Comsol, FCSx_1Dsph, FCSx_1Daxi
-    programs['Therm'] = 'FCSx_1Dsph'        # Comsol, FCSx_1Dsph, FCSx_1Daxi
-    programs['FEM'] = 'FCSx_1Dsph'          # Comsol, FCSx_1Dsph, FCSx_1Daxi
-    programs['Phasetr'] = 'FCSx_1Dsph'      # Comsol, FCSx_1Dsph, FCSx_1Daxi
+    programs['Therm'] = 'FCSx'              # Comsol, FCSx
+    programs['FEM'] = 'FCSx'                # Comsol, FCSx
+    programs['Phasetr'] = 'FCSx'            # Comsol, FCSx
     modelvar["programs"] = programs
 
     # --------------- Time ------------------#
@@ -89,7 +89,7 @@ def start():
     if inputvariable == 'Run':
         checkcalculation()
         createmesh(modelvar)
-        #runcarbonitriding(modelvar)
+        runcarbonitriding(modelvar)
         #runquenching(modelvar)
         # runtempering(modelvar)
         # runfatiguetest(modelvar)

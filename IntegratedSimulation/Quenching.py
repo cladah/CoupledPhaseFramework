@@ -1,4 +1,4 @@
-#from IntegratedSimulation.Solvers.SphericalFEM import *
+from Solvers.RunDocker import rundocker
 
 def modelfitting(model,x,y):
     if model == "KM":
@@ -12,14 +12,10 @@ def modelfitting(model,x,y):
 
 
 def runquenching(modelvar):
-
-
-
-    a = 1
-    if a==1:
+    if modelvar['programs']['FEM'] == 'FCSx':
+        rundocker(modelvar)
+    elif modelvar['programs']['FEM'] == 'Comsol':
+        #runcomsol(modelvar)
         pass
     else:
-        if modelvar["programs"]["FEM"] == "1Dsphere":
-            #sphericalsolver(1,modelvar)
-            pass
-
+        raise KeyError('Program not implemented')
