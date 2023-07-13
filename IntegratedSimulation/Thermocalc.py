@@ -109,6 +109,6 @@ def setmaterial(modelvar,type):
         env_dep = 'N'
         env_comp = {'H': 3.2762, 'C': 14.0238, 'O': 18.6801}
     else:
-        raise KeyError("Wrong carbonitiding environment, use Argon, Methane, Propane")
+        raise KeyError("Wrong carbonitiding environment, use Argon, Methane, or Propane")
 
     return env_dep, env_comp

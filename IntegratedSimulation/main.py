@@ -29,18 +29,20 @@ def start():
     martensite = Material(200E9, 0.3, 10E-6, 0)
     perlite = Material(200E9, 0.3, 10E-6, 0)
     bainite = Material(200E9, 0.3, 10E-6, 0)
+    materialmix = Material(200E9, 0.3, 10E-6, 0)
     modelvar['Austenite'] = austenite
     modelvar['Martensite'] = martensite
     modelvar['Perlite'] = perlite
     modelvar['Bainite'] = bainite
+    modelvar['Materialmix'] = materialmix       # This is recalculated in FEM simulation
 
     # --------------- Thermodynamics ------------------#
     modelvar["nodesThermo"] = 3                 # Nodes in thermodynamic calculation
     modelvar["CNtemp"] = 800 + 273.15           # Temperature for carbonitriding/annealing degC
     modelvar["CNenv"] = 'Methane'               # Type of gas environment for carbonitriding
     modelvar["temperingtemp"] = 400 + 273.15    # Temperature of tempering
-    modelvar["quenchtime"] = 1                  # Time in quenching medium
-    modelvar["quenchtsteps"] = 500              # Time in quenching medium
+    modelvar["quenchtime"] = 1                  # Time in quenching medium [h]
+    modelvar["quench_dt"] = 1/500               # Time step for quenching simulation
     modelvar["quenchmedium"] = 'oil'            # Type of quenching medium
 
     # --------------- FEM ------------------#
@@ -48,16 +50,16 @@ def start():
     modelvar["nodesFEM"] = 4                # Nodes radial FEM calculation
     modelvar["nodesFEM_phi"] = 4            # Nodes circumferential FEM calculation
     modelvar["nodesFEM_z"] = 4              # Nodes circumferential FEM calculation
-    modelvar["Meshscaling"] = 0.95
+    modelvar["Meshscaling"] = 0.95          # scaling towards circumference
     modelvar["shapef"] = "Linear"           # FEM shapefunction Linear, Quad
     modelvar["peclet"] = abs(2E-9 * modelvar["radius"] / modelvar["nodesFEM"] / 2 / modelvar["lambda"])
 
     # --------------- Material models ------------------#
     models = dict()
-    models['Martensite'] = 'KM'
-    models['Perlite'] = 'JMAK'
-    models['Banite'] = 'JMAK'
-    models['Ferrite'] = 'JMAK'
+    models['Martensite'] = 'KM'             # Koitinen-Marburger
+    models['Perlite'] = 'JMAK'              # JMAK, Devold
+    models['Banite'] = 'JMAK'               # JMAK, Devold
+    models['Ferrite'] = 'JMAK'              # JMAK, Devold
     models['CombinedMat'] = 'RuleofMix'     # RuleofMix,
     models['Mattype'] = 'Elastic'           # Elastic, Elasto-plastic,
     modelvar["models"] = models
