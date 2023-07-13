@@ -2,6 +2,13 @@ import numpy as np
 import h5py
 from datetime import datetime
 
+class Material:
+    def __init__(self, E, nu, alpha, f):
+        self.E = E              # Youngs modulus [Pa]
+        self.nu = nu            # Poissons ratio [-]
+        self.alpha = alpha      # Thermal expansion coefficient
+        self.f = f              # Material fraction
+
 def createcachfile(modelvar):
     info = np.array([modelvar["radius"], modelvar["nodesFEM"], modelvar["E"], modelvar["nu"], modelvar["shapef"],
                      modelvar["Meshscaling"]])

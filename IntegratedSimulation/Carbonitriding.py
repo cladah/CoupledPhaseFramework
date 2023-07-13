@@ -10,7 +10,7 @@ def runcarbonitriding(modelvar):
         concentrationC = CN[0]
         concentrationN = CN[1]
     else:
-        raise KeyError
+        raise KeyError('Program not implemented for carbonitriding')
 
     savetocache("CNcurves/C", np.array(concentrationC))
     savetocache("CNcurves/N", np.array(concentrationN))
