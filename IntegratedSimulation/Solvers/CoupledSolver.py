@@ -58,8 +58,11 @@ lmbda = E*nu/(1+nu)/(1-2*nu)
 # --------------- Boundary conditions ------------------#
 
 # Thermal
-g_expr = '1 + x[0]*x[0] + alpha *x[1]*x[1] + beta *t'
+g_expr = '1 + x[0]*x[0] + beta *t'
 g = ufl.Expression(g_expr, alpha=3.0, beta=1.2, t=0, degree=2)
+u_n = fem.Function(V)
+u_n.name = "u_n"
+u_n.interpolate(g)
 
 #Inner bc
 center_ent = mesh.locate_entities_boundary(domain, dim=0,marker=lambda x: np.isclose(x[0], 0.0))
