@@ -3,7 +3,8 @@ import h5py
 from datetime import datetime
 
 class Material:
-    def __init__(self, E, nu, alpha, f):
+    def __init__(self, name, E, nu, alpha, f):
+        self.name = name
         self.E = E              # Youngs modulus [Pa]
         self.nu = nu            # Poissons ratio [-]
         self.alpha = alpha      # Thermal expansion coefficient

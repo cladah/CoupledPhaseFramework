@@ -7,42 +7,19 @@ import numpy as np
 #import gmsh
 from petsc4py.PETSc import ScalarType
 
-class Material:
-    def __init__(self, name, E, nu, alpha, f):
-        self.name = name
-        self.E = E              # Youngs modulus [Pa]
-        self.nu = nu            # Poissons ratio [-]
-        self.alpha = alpha      # Thermal expansion coefficient
-        self.f = f              # Material fraction
-
-
 domain = mesh.create_interval(MPI.COMM_WORLD, nx=50, points=(0.0, 1.0))
 
 # Function space over domain
 V = fem.FunctionSpace(domain, ("Lagrange", 1)) #Lagrange
 
-material = dict()
-i = 0
-with open('Material.txt') as f:
-    lines = f.readlines()
-    for line in lines:
-        line = line.split()
-        material[line[0]] = [float(line[1]), float(line[2]), float(line[3]), float(line[4])]
-    i += 1
-    f.close()
-print(material.keys())
-# Material parameters
-E = fem.Constant(domain, material['Austenite'][0])
-nu = fem.Constant(domain, material['Austenite'][1])
+# Material parameters #--------------------------------- Read from file saved under /Solvers
+E = fem.Constant(domain, 1e5)
+nu = fem.Constant(domain, (0.3))
 rho_g = 1e-3
 mu = E/2/(1+nu)
 lmbda = E*nu/(1+nu)/(1-2*nu)
 
-#center = mesh.locate_entities_boundary(domain, dim=0, marker=lambda x: np.isclose(x[0], 0.0))
-#circumference = mesh.locate_entities_boundary(domain, dim=0, marker=lambda x: np.isclose(x[0], 1.0))
-#dofs = fem.locate_dofs_topological(V=V, entity_dim=0, entities=center)
-
-
+# Defining dofs for boundary conditions
 def in_center(x):
     return np.isclose(x[0], 0)
 
@@ -60,7 +37,6 @@ circumferencedofs = fem.locate_dofs_topological(V=V, entity_dim=0, entities=circ
 #circumference_ds = ufl.Measure("dp", subdomain_data=circumferencedofs)
 
 p = fem.Constant(domain, ScalarType(-10))
-
 
 f = fem.Function(V)
 dofs = fem.locate_dofs_geometrical(V, lambda x: np.isclose(x.T, 1.0))

@@ -1,5 +1,5 @@
 from Quenching import *
-from Carbonitriding import *
+#from Carbonitriding import *
 from Post_processing import *
 import subprocess
 import docker
@@ -27,11 +27,11 @@ def start():
     # --------------- Material ------------------#
     modelvar["lambda"] = 1E-12              #
     modelvar["c_k"] = 1                     #
-    austenite = Material(E=200E9, nu=0.3, alpha=10E-6, f=1)
-    martensite = Material(200E9, 0.3, 10E-6, 0)
-    perlite = Material(200E9, 0.3, 10E-6, 0)
-    bainite = Material(200E9, 0.3, 10E-6, 0)
-    materialmix = Material(200E9, 0.3, 10E-6, 0)
+    austenite = Material('Austenite', E=200E9, nu=0.3, alpha=10E-6, f=1)
+    martensite = Material('Martensite', 200E9, 0.3, 10E-6, 0)
+    perlite = Material('Perlite', 200E9, 0.3, 10E-6, 0)
+    bainite = Material('Bainite', 200E9, 0.3, 10E-6, 0)
+    materialmix = Material('Mix', 200E9, 0.3, 10E-6, 0)
     modelvar['Austenite'] = austenite
     modelvar['Martensite'] = martensite
     modelvar['Perlite'] = perlite
@@ -88,8 +88,8 @@ def start():
 
     if inputvariable == 'Run':
         checkcalculation()
-        createmesh(modelvar)
-        runcarbonitriding(modelvar)
+        #createmesh(modelvar)
+        #runcarbonitriding(modelvar)
         #runquenching(modelvar)
         # runtempering(modelvar)
         # runfatiguetest(modelvar)
