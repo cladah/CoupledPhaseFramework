@@ -7,14 +7,6 @@ import numpy as np
 #import gmsh
 from petsc4py.PETSc import ScalarType
 
-class Material:
-    def __init__(self, name, E, nu, alpha, f):
-        self.name = name
-        self.E = E              # Youngs modulus [Pa]
-        self.nu = nu            # Poissons ratio [-]
-        self.alpha = alpha      # Thermal expansion coefficient
-        self.f = f              # Material fraction
-
 
 domain = mesh.create_interval(MPI.COMM_WORLD, nx=50, points=(0.0, 1.0))
 
@@ -30,7 +22,7 @@ with open('Material.txt') as f:
         material[line[0]] = [float(line[1]), float(line[2]), float(line[3]), float(line[4])]
     i += 1
     f.close()
-print(material.keys())
+
 # Material parameters
 E = fem.Constant(domain, material['Austenite'][0])
 nu = fem.Constant(domain, material['Austenite'][1])
@@ -114,6 +106,17 @@ stress_expr = fem.Expression(s, V_stress.element.interpolation_points())
 stresses = fem.Function(V_stress, name="stress")
 #stresses.interpolate(stress_expr.sub(0))
 #.sub(0)
+
+# Heat solver
+alpha = 3
+beta = 1.2
+u_D = ufl.Expression('1 + x[0]*x[0] + alpha*x[1]*x[1] + beta*t',
+                 degree=2, alpha=alpha, beta=beta, t=0)
+VT = fem.FunctionSpace(domain, ('DG', 1))
+bcT = fem.DirichletBC(VT, u_D, boundary)
+
+
+
 
 with io.XDMFFile(domain.comm, "output.xdmf", "w") as xdmf:
     xdmf.write_mesh(domain)
