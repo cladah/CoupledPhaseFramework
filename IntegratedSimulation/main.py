@@ -1,4 +1,5 @@
 from Inputfile import createmodelinput
+from Mesh import meshnew
 from Quenching import *
 #from Carbonitriding import *
 from Post_processing import *
@@ -14,7 +15,7 @@ def start():
     inputvariable = input('What do you want to do? ')
 
     if inputvariable == 'Run':
-        pass
+        meshnew()
         # createmesh(modelvar)
         # runcarbonitriding(modelvar)
         # runquenching(modelvar)
