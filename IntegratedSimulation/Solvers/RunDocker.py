@@ -44,4 +44,4 @@ def rundocker(modelvar):
                                           name='fenicscxcont')
         for log in container.logs(stream=True, stdout=True, stderr=True):
             print(log)
-        print('Fenicsx calculation done!')
+        print('Docker closing!')

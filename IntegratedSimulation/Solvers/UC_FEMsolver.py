@@ -92,7 +92,7 @@ def runFEM():
     #stresses.interpolate(stress_expr.sub(0))
     #.sub(0)
 
-    with io.XDMFFile(domain.comm, "output.xdmf", "w") as xdmf:
+    with io.XDMFFile(domain.comm, "Resultfiles/output.xdmf", "w") as xdmf:
         xdmf.write_mesh(domain)
         xdmf.write_function(uh)
         xdmf.write_function(vm_stresses)
