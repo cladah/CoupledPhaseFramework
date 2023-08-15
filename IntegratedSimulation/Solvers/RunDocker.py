@@ -4,7 +4,7 @@ def rundocker(modelvar):
     martensite = modelvar['Martensite']
     perlite = modelvar['Perlite']
     bainite = modelvar['Bainite']
-    f = open("Solvers/Material.txt", "w")
+    f = open("Cachefiles/Material.txt", "w")
     f.write('Austenite ' + str(austenite.E)+' ' + str(austenite.nu)+' ' + str(austenite.alpha) + ' ' + str(austenite.f) + '\n')
     f.write('Martensite ' + str(martensite.E)+' ' + str(martensite.nu)+' ' + str(martensite.alpha) + ' ' + str(martensite.f) + '\n')
     f.write('Perlite ' + str(perlite.E)+' ' + str(perlite.nu)+' ' + str(perlite.alpha) + ' ' + str(perlite.f) + '\n')
@@ -22,10 +22,10 @@ def rundocker(modelvar):
             raise KeyError('Docker has not implemented geometry')
 
         client = docker.from_env()
-        container = client.containers.run('dolfinx/dolfinx:stable', ["python3", "CoupledSolver.py"],
+        container = client.containers.run('dolfinx/dolfinx:stable', ["python3", "Solvers/UncoupledSolver.py"],
                                           detach=True,
                                           auto_remove=True,
-                                          volumes=['C:/Users/ClasD/Documents/GitHub/CoupledPhaseFramework/IntegratedSimulation/Solvers:/root/shared'],
+                                          volumes=['C:/Users/ClasD/Documents/GitHub/CoupledPhaseFramework/IntegratedSimulation:/root/shared'],
                                           working_dir='/root/shared',
                                           name='fenicscxcont')
         for log in container.logs(stream=True, stdout=True, stderr=True):

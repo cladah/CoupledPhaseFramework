@@ -1,5 +1,5 @@
 from Inputfile import createmodelinput
-from Mesh import meshnew
+from Mesh import createMesh
 from Quenching import *
 #from Carbonitriding import *
 from Post_processing import *
@@ -15,7 +15,8 @@ def start():
     inputvariable = input('What do you want to do? ')
 
     if inputvariable == 'Run':
-        meshnew()
+        createMesh(modelvar)
+        rundocker(modelvar)
         # createmesh(modelvar)
         # runcarbonitriding(modelvar)
         # runquenching(modelvar)
@@ -48,9 +49,6 @@ def start():
         #sigma = getstresses(modelvar, strains)
         #createResults(modelvar, results['displacement'])
         #plotstrain(modelvar)
-
-    elif inputvariable == 'y':
-        rundocker(modelvar)
 
 if __name__ == "__main__":
     start()

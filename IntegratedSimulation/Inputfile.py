@@ -11,7 +11,7 @@ def createmodelinput():
 
     # --------------- Geometry ------------------#
     modelvar["geotype"] = "Spherical"  # Type of geometry Spherical, Axisymmetric,
-    modelvar["radius"] = 0.01  # Radius of sphere [m]
+    modelvar["radius"] = 1  # Radius of sphere [m]
     modelvar["thickness"] = 0.01  # Thickness of cylinder [m]
     modelvar["innerradius"] = 0.005  # inner radius of cylinder [m]
 
@@ -39,7 +39,8 @@ def createmodelinput():
     modelvar["quenchmedium"] = 'oil'  # Type of quenching medium
 
     # --------------- FEM ------------------#
-    modelvar["elementtype"] = "Spherical"  # Spherical, AxisymPstrain, AxisymPstress, Axisym2D
+    modelvar["elemntdim"] = 2
+    modelvar["elementtype"] = "Axisym2D"  # Spherical, AxisymPstrain, AxisymPstress, Axisym2D
     modelvar["nodesFEM"] = 4  # Nodes radial FEM calculation
     modelvar["nodesFEM_phi"] = 4  # Nodes circumferential FEM calculation
     modelvar["nodesFEM_z"] = 4  # Nodes circumferential FEM calculation
