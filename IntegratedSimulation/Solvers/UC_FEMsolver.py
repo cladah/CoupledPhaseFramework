@@ -8,6 +8,7 @@ import numpy as np
 from petsc4py.PETSc import ScalarType
 
 def runFEM():
+    # --------------- Loading mesh ------------------#
     domain = mesh.create_interval(MPI.COMM_WORLD, nx=50, points=(0.0, 1.0))
 
     # Function space over domain

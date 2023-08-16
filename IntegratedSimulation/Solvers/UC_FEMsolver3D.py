@@ -10,7 +10,7 @@ from petsc4py.PETSc import ScalarType
 def runFEM():
     # --------------- Loading mesh ------------------#
 
-    msh, cell_markers, facet_markers = gmshio.read_from_msh("Resultfiles/Mesh.msh", MPI.COMM_WORLD, 0, gdim=2)
+    msh, cell_markers, facet_markers = gmshio.read_from_msh("Resultfiles/Mesh.msh", MPI.COMM_WORLD, 0, gdim=3)
     domain = msh
 
     # --------------- Input assignment ------------------#
