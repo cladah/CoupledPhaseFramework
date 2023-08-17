@@ -7,11 +7,15 @@ import numpy as np
 #import gmsh
 from petsc4py.PETSc import ScalarType
 
+
+from MeshConverter import convert_mesh
 from UC_FEMsolver2D import runFEM
 from UC_Heatsolver import *
+from ThermoMech import runThermoMech
 from UC_Phasesolver import runPhase
 
-
-runFEM()
+convert_mesh()
+#runFEM()
+runThermoMech()
 runHeat()
 #runPhase()

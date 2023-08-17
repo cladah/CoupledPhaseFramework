@@ -14,6 +14,9 @@ def runHeat():
     # --------------- Loading mesh ------------------#
 
     msh, cell_markers, facet_markers = gmshio.read_from_msh("Resultfiles/Mesh.msh", MPI.COMM_WORLD, 0, gdim=2)
+    msh.name = 'Sphere'
+    #with io.XDMFFile(MPI.COMM_WORLD, "Resultfiles/Mesh.xdmf", "r") as file:
+    #    msh = file.read_mesh(name="Sphere")
     domain = msh
 
     # --------------- Loading inputs ------------------#
@@ -78,9 +81,13 @@ def runHeat():
 
     u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
     f = fem.Constant(domain, PETSc.ScalarType(0))
-
+    uold = ufl.Function(V)
     a = u * v * ufl.dx + dt * ufl.dot(ufl.grad(u), ufl.grad(v)) * ufl.dx
     L = (u_n + dt * f) * v * ufl.dx
+
+    # therm_form = (cV * (dTheta - Thetaold) / dt * Theta_ +
+    #                   kappa * T0 * ufl.tr(eps(du - uold)) / dt * Theta_ +
+    #                   ufl.dot(k * ufl.grad(dTheta), ufl.grad(Theta_))) * ufl.dx
 
     bilinear_form = fem.form(a)
     linear_form = fem.form(L)

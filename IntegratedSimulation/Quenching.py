@@ -1,4 +1,4 @@
-from Solvers.RunDocker import rundocker
+from IntegratedSimulation.RunDocker import rundocker
 
 def modelfitting(model,x,y):
     if model == "KM":

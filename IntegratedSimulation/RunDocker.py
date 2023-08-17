@@ -1,5 +1,11 @@
 import docker
+import os
 def rundocker(modelvar):
+    directory = os.getcwd()
+    dockervolume = directory + ':/root/shared'
+    dockervolume = dockervolume.replace('\\', '/')
+
+
     austenite = modelvar['Austenite']
     martensite = modelvar['Martensite']
     perlite = modelvar['Perlite']
@@ -25,7 +31,7 @@ def rundocker(modelvar):
         container = client.containers.run('dolfinx/dolfinx:stable', ["python3", "Solvers/UncoupledSolver.py"],
                                           detach=True,
                                           auto_remove=True,
-                                          volumes=['C:/Users/ClasD/Documents/GitHub/CoupledPhaseFramework/IntegratedSimulation:/root/shared'],
+                                          volumes=[dockervolume],
                                           working_dir='/root/shared',
                                           name='fenicscxcont')
         for log in container.logs(stream=True, stdout=True, stderr=True):
@@ -39,7 +45,7 @@ def rundocker(modelvar):
                                           detach=True,
                                           auto_remove=True,
                                           volumes=[
-                                              'C:/Users/ClasD/Documents/GitHub/CoupledPhaseFramework/IntegratedSimulation/Solvers:/root/shared'],
+                                              'C:/Users/ClasD/Documents/GitHub/CoupledPhaseFramework/IntegratedSimulation:/root/shared'],
                                           working_dir='/root/shared',
                                           name='fenicscxcont')
         for log in container.logs(stream=True, stdout=True, stderr=True):

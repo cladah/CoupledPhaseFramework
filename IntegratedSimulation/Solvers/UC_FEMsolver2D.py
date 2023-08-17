@@ -9,9 +9,11 @@ from petsc4py.PETSc import ScalarType
 
 def runFEM():
     # --------------- Loading mesh ------------------#
-
-    msh, cell_markers, facet_markers = gmshio.read_from_msh("Resultfiles/Mesh.msh", MPI.COMM_WORLD, 0, gdim=2)
+    with io.XDMFFile(MPI.COMM_WORLD, "Resultfiles/Mesh.xdmf", "r") as file:
+        msh = file.read_mesh(name="Sphere")
+    #msh, cell_markers, facet_markers = gmshio.read_from_msh("Resultfiles/Mesh.msh", MPI.COMM_WORLD, 0, gdim=2)
     domain = msh
+    x = ufl.SpatialCoordinate(domain)
 
     # --------------- Input assignment ------------------#
 
@@ -24,7 +26,7 @@ def runFEM():
 
     # --------------- Creating functionspaces ------------------#
 
-    V = fem.VectorFunctionSpace(domain, ("Lagrange", 1))
+    V = fem.VectorFunctionSpace(domain, ("Lagrange", 1), dim=2)
 
     # --------------- Finding boundary conditions ------------------#
 
@@ -38,22 +40,26 @@ def runFEM():
     ysym = mesh.locate_entities_boundary(domain, fdim, ysym_boundary)
     xsym = mesh.locate_entities_boundary(domain, fdim, xsym_boundary)
 
-    u_D = np.array([0, 0], dtype=ScalarType)
-    xbc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, xsym), V)
-    ybc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, ysym), V)
+    u_D = np.array(0.0, dtype=ScalarType)
+    xbc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, xsym), V.sub(0)) # sub defines the component
+    ybc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, ysym), V.sub(1)) # sub defines the component
     bc = [xbc, ybc]
 
-    # --------------- Tractions on all remaining edges ------------------#
+    # --------------- Tractions on outside edge ------------------#
+    def outer(x):
+        return np.isclose(np.sqrt(x[0]**2+x[1]**2), 1)
 
-    T = fem.Constant(domain, ScalarType((0, 0)))
-    ds = ufl.Measure("ds", domain=domain) # No idea
+    outer_facets = mesh.locate_entities_boundary(domain, fdim, outer)
+    #outer_facets = mesh.locate_entities_boundary(domain, fdim, xsym)
+    ds = ufl.Measure("ds", domain=outer_facets)
+    #T = fem.Constant(domain, ScalarType((0, 0)))
+    #ds = ufl.Measure("ds", domain=domain) # No idea
     p = fem.Constant(domain, ScalarType(-10))
 
-    f = fem.Function(V)
-    dofs = fem.locate_dofs_geometrical(V, lambda x: np.isclose(x.T, 1.0))
-    f.x.array[dofs] = [100,100]
+    #f = fem.Function(V)
+    #dofs = fem.locate_dofs_geometrical(V, lambda x: np.isclose(x.T, 1.0))
+    #f.x.array[dofs] = [100]
 
-    x = ufl.SpatialCoordinate(domain)
 
     # --------------- Strain and stress definitions ------------------#
     def eps(u):
@@ -66,21 +72,21 @@ def runFEM():
 
     # Stress given a displacement field
     def sigma(u):
-        return lmbda*ufl.tr(axisym_eps(u))*ufl.Identity(2) + 2.0*mu*axisym_eps(u)
+        return lmbda*ufl.tr(axisym_eps(u))*ufl.Identity(3) + 2.0*mu*axisym_eps(u)
 
     # --------------- Variational formulation ------------------#
-
+    n = ufl.FacetNormal(domain)
     u = ufl.TrialFunction(V)
     v = ufl.TestFunction(V)
-    # Defining the problem
-    #a = ufl.dot(ufl.grad(u), ufl.grad(v)) * ufl.dx
-    #L = p * v * ufl.dx
-    a = (ufl.inner(sigma(u), axisym_eps(v))*x[0]**2)*ufl.dx # axisymmetric definitions
-    L = (ufl.inner(f, v)*x[0]**2)*ufl.dx # axisymmetric definitions
+
+
+    a = (ufl.inner(sigma(u), axisym_eps(v))*x[0])*ufl.dx # axisymmetric definitions
+    L = (ufl.inner(p*n, v)*x[0])*ds # axisymmetric definitions
+
 
     # --------------- Problem formulation ------------------#
 
-    problem = fem.petsc.LinearProblem(a, L, bcs=[bc], petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
+    problem = fem.petsc.LinearProblem(a, L, bcs=bc, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
     uh = problem.solve()
     uh.name = "displacement"
 

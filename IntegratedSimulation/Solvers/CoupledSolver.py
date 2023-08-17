@@ -22,6 +22,7 @@ nu = fem.Constant(domain, 0.3)
 rho_g = 1e-3
 mu = E/2/(1+nu)
 lmbda = E*nu/(1+nu)/(1-2*nu)
+alpha = 2.31e-5
 
 # --------------- Boundary conditions ------------------#
 

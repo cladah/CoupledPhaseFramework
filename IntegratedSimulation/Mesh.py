@@ -15,6 +15,7 @@ def mesh1D(r1, r2):
     meshsize = (r2-r1)/100
     gmsh.initialize()
     model = gmsh.model()
+
     factory = model.geo
     factory.addPoint(0, 0, 0, meshsize, 1)
     factory.addPoint(r2, 0, 0, meshsize, 2)
@@ -32,15 +33,13 @@ def mesh2D(r1, r2):
 
     gmsh.initialize()
     model = gmsh.model()
-    model.add("circle")
-    model.set_current('circle')
+    model.add("sphere")
+    model.set_current('sphere')
 
     factory = model.geo
 
     lcent = r2 / 50
     lcirc = r2 / 50
-
-    # membrane = model.occ.addDisk(0, 0, 0, 1, 1)
 
     factory.addPoint(0, 0, 0, lcent, 1)
     factory.addPoint(r2, 0, 0, lcirc, 2)
@@ -53,21 +52,9 @@ def mesh2D(r1, r2):
     factory.addPlaneSurface([4], 1)
     factory.synchronize()
     model.addPhysicalGroup(2, [1], name="My surface")
-    #surface = []
-    #for surface in gmsh.model.getEntities(dim=2):
-    #    surfaces = surface[1]
-    #gmsh.model.addPhysicalGroup(2, [surfaces], 1)
+    model.addPhysicalGroup(1, [1, 2, 3], 5, name='boundaries')
+    # ----------------------
 
-    #outside = []
-    #for line in gmsh.model.getEntities(dim=1):
-    #    com = gmsh.model.occ.getCenterOfMass(line[0], line[1])
-    #    if np.isclose(np.sqrt(com[0]**2+com[1]**2), r2):
-    #        outside.append(line[1])
-    #gmsh.model.addPhysicalGroup(1, outside, 2)
-
-    # model.addPhysicalGroup(2, [membrane], 1)
-    # gmsh.option.setNumber("Mesh.CharacteristicLengthMin",0.05)
-    # gmsh.option.setNumber("Mesh.CharacteristicLengthMax",0.05)
     model.mesh.generate(2)
     gmsh.write("Resultfiles/Mesh.msh")
     gmsh.write("Resultfiles/Mesh.vtk")
