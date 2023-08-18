@@ -1,125 +1,123 @@
-from mpi4py import MPI
-from dolfinx import mesh, fem, io
-from dolfinx.fem import FunctionSpace
-from dolfinx.io import gmshio
-import ufl
-import numpy as np
-#import gmsh
-from petsc4py.PETSc import ScalarType
+from pathlib import Path
+
+    import numpy as np
+
+    import ufl
+    from dolfinx import geometry
+    from dolfinx.cpp.fem import Form_complex128, Form_float64
+    from dolfinx.fem import (Function, FunctionSpace, IntegralType, dirichletbc,
+                             form, locate_dofs_topological)
+    from dolfinx.fem.petsc import (apply_lifting, assemble_matrix, assemble_vector,
+                                   set_bc)
+    from dolfinx.io import XDMFFile
+    from dolfinx.jit import ffcx_jit
+    from dolfinx.mesh import locate_entities_boundary, meshtags
+
+    from mpi4py import MPI
+    from petsc4py import PETSc
+
+def runFEM():
 
 
-domain = mesh.create_interval(MPI.COMM_WORLD, nx=50, points=(0.0, 1.0))
+    infile = XDMFFile(MPI.COMM_WORLD, Path(Path(__file__).parent, "data", "cooks_tri_mesh.xdmf"),
+                      "r", encoding=XDMFFile.Encoding.ASCII)
+    msh = infile.read_mesh(name="Grid")
+    infile.close()
 
-# Function space over domain
-V = fem.FunctionSpace(domain, ("Lagrange", 1)) #Lagrange
+    # Stress (Se) and displacement (Ue) elements
+    Se = ufl.TensorElement("DG", msh.ufl_cell(), 1, symmetry=True)
+    Ue = ufl.VectorElement("Lagrange", msh.ufl_cell(), 2)
 
-material = dict()
-i = 0
-with open('Material.txt') as f:
-    lines = f.readlines()
-    for line in lines:
-        line = line.split()
-        material[line[0]] = [float(line[1]), float(line[2]), float(line[3]), float(line[4])]
-    i += 1
-    f.close()
+    S = FunctionSpace(msh, Se)
+    U = FunctionSpace(msh, Ue)
 
-# Material parameters
-E = fem.Constant(domain, material['Austenite'][0])
-nu = fem.Constant(domain, material['Austenite'][1])
-rho_g = 1e-3
-mu = E/2/(1+nu)
-lmbda = E*nu/(1+nu)/(1-2*nu)
+    # Get local dofmap sizes for later local tensor tabulations
+    Ssize = S.element.space_dimension
+    Usize = U.element.space_dimension
 
-#center = mesh.locate_entities_boundary(domain, dim=0, marker=lambda x: np.isclose(x[0], 0.0))
-#circumference = mesh.locate_entities_boundary(domain, dim=0, marker=lambda x: np.isclose(x[0], 1.0))
-#dofs = fem.locate_dofs_topological(V=V, entity_dim=0, entities=center)
+    sigma, tau = ufl.TrialFunction(S), ufl.TestFunction(S)
+    u, v = ufl.TrialFunction(U), ufl.TestFunction(U)
 
+    # Locate all facets at the free end and assign them value 1. Sort the
+    # facet indices (requirement for constructing MeshTags)
+    free_end_facets = np.sort(locate_entities_boundary(msh, 1, lambda x: np.isclose(x[0], 48.0)))
+    mt = meshtags(msh, 1, free_end_facets, 1)
 
-def in_center(x):
-    return np.isclose(x[0], 0)
+    ds = ufl.Measure("ds", subdomain_data=mt)
 
-def on_circumference(x):
-    return np.isclose(x[0], 1)
+    # Homogeneous boundary condition in displacement
+    u_bc = Function(U)
+    u_bc.x.array[:] = 0.0
 
-#Inner bc
-center_ent = mesh.locate_entities_boundary(domain, dim=0,marker=lambda x: np.isclose(x[0], 0.0))
-center_dofs = fem.locate_dofs_topological(V=V, entity_dim=0, entities=center_ent)
-bc = fem.dirichletbc(value=ScalarType(0), dofs=center_dofs, V=V)
+    # Displacement BC is applied to the left side
+    left_facets = locate_entities_boundary(msh, 1, lambda x: np.isclose(x[0], 0.0))
+    bdofs = locate_dofs_topological(U, 1, left_facets)
+    bc = dirichletbc(u_bc, bdofs)
 
-#Circumference bc
-circumference_ent = mesh.locate_entities_boundary(domain, dim=0, marker=lambda x: np.isclose(x[0], 1.0))
-circumferencedofs = fem.locate_dofs_topological(V=V, entity_dim=0, entities=circumference_ent)
-#circumference_ds = ufl.Measure("dp", subdomain_data=circumferencedofs)
+    # Elastic stiffness tensor and Poisson ratio
+    E, nu = 1.0, 1.0 / 3.0
 
-p = fem.Constant(domain, ScalarType(-10))
+    def sigma_u(u):
+        """Constitutive relation for stress-strain. Assuming plane-stress in XY"""
+        eps = 0.5 * (ufl.grad(u) + ufl.grad(u).T)
+        sigma = E / (1. - nu ** 2) * ((1. - nu) * eps + nu * ufl.Identity(2) * ufl.tr(eps))
+        return sigma
 
+    a00 = ufl.inner(sigma, tau) * ufl.dx
+    a10 = - ufl.inner(sigma, ufl.grad(v)) * ufl.dx
+    a01 = - ufl.inner(sigma_u(u), tau) * ufl.dx
 
-f = fem.Function(V)
-dofs = fem.locate_dofs_geometrical(V, lambda x: np.isclose(x.T, 1.0))
-f.x.array[dofs] = 100
+    f = ufl.as_vector([0.0, 1.0 / 16])
+    b1 = form(- ufl.inner(f, v) * ds(1))
 
-x = ufl.SpatialCoordinate(domain)
+    # JIT compile individual blocks tabulation kernels
+    nptype = "complex128" if np.issubdtype(PETSc.ScalarType, np.complexfloating) else "float64"
+    ffcxtype = "double _Complex" if np.issubdtype(PETSc.ScalarType, np.complexfloating) else "double"
+    ufcx_form00, _, _ = ffcx_jit(msh.comm, a00, form_compiler_options={"scalar_type": ffcxtype})
+    kernel00 = getattr(ufcx_form00.integrals(0)[0], f"tabulate_tensor_{nptype}")
+    ufcx_form01, _, _ = ffcx_jit(msh.comm, a01, form_compiler_options={"scalar_type": ffcxtype})
+    kernel01 = getattr(ufcx_form01.integrals(0)[0], f"tabulate_tensor_{nptype}")
+    ufcx_form10, _, _ = ffcx_jit(msh.comm, a10, form_compiler_options={"scalar_type": ffcxtype})
+    kernel10 = getattr(ufcx_form10.integrals(0)[0], f"tabulate_tensor_{nptype}")
 
-def eps(u):
-    return ufl.sym(ufl.grad(u))
+    # Prepare a Form with a condensed tabulation kernel
+    Form = Form_float64 if PETSc.ScalarType == np.float64 else Form_complex128
 
+    integrals = {IntegralType.cell: ([(-1, tabulate_condensed_tensor_A.address)], None)}
+    a_cond = Form([U._cpp_object, U._cpp_object], integrals, [], [], False, None)
 
-def axisym_eps(v):
-    return ufl.sym(ufl.as_tensor([[v[0].dx(0), 0, v[0].dx(1)],
-                          [0, v[0]/x[0], 0],
-                          [v[1].dx(0), 0, v[1].dx(1)]]))
-def sphere_eps(v):
-    #return ufl.grad(v)
-    return ufl.as_tensor([[v.dx(0), 0],[0, v/x[0]]])
+    A_cond = assemble_matrix(a_cond, bcs=[bc])
+    A_cond.assemble()
 
-# Stress given a displacement field
-def sigma(u):
-    return lmbda*ufl.tr(sphere_eps(u))*ufl.Identity(2) + 2.0*mu*sphere_eps(u)
+    b = assemble_vector(b1)
+    apply_lifting(b, [a_cond], bcs=[[bc]])
+    b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
+    set_bc(b, [bc])
 
+    uc = Function(U)
+    solver = PETSc.KSP().create(A_cond.getComm())
+    solver.setOperators(A_cond)
+    solver.solve(b, uc.vector)
 
-# Gravity on the full domain
-#f = fem.Constant(domain, ScalarType((0, 0, -rho_g)))
+    # Pure displacement based formulation
+    a = form(- ufl.inner(sigma_u(u), ufl.grad(v)) * ufl.dx)
+    A = assemble_matrix(a, bcs=[bc])
+    A.assemble()
 
+    # Create bounding box for function evaluation
+    bb_tree = geometry.BoundingBoxTree(msh, 2)
 
-# Variational problem
-u = ufl.TrialFunction(V)
-v = ufl.TestFunction(V)
-# Defining the problem
-#a = ufl.dot(ufl.grad(u), ufl.grad(v)) * ufl.dx
-#L = p * v * ufl.dx
-a = (ufl.inner(sigma(u), sphere_eps(v))*x[0]**2)*ufl.dx
-L = (ufl.inner(f, v)*x[0]**2)*ufl.dx
+    # Check against standard table value
+    p = np.array([48.0, 52.0, 0.0], dtype=np.float64)
+    cell_candidates = geometry.compute_collisions(bb_tree, p)
+    cells = geometry.compute_colliding_cells(msh, cell_candidates, p)
 
-# Setting up problem
-problem = fem.petsc.LinearProblem(a, L, bcs=[bc], petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
-uh = problem.solve()
-uh.name = "displacement"
+    uc.x.scatter_forward()
+    if len(cells) > 0:
+        value = uc.eval(p, cells[0])
+        print(value[1])
+        assert np.isclose(value[1], 23.95, rtol=1.e-2)
 
-s = sigma(uh) -1/3*ufl.tr(sigma(uh))*ufl.Identity(2)
-von_Mises = ufl.sqrt(3./2*ufl.inner(s, s))
-V_vm = fem.FunctionSpace(domain, ("DG", 1))
-stress_expr = fem.Expression(von_Mises, V_vm.element.interpolation_points())
-vm_stresses = fem.Function(V_vm, name="vm_stress")
-vm_stresses.interpolate(stress_expr)
-V_stress = fem.VectorFunctionSpace(domain, ("DG", 1))
-stress_expr = fem.Expression(s, V_stress.element.interpolation_points())
-stresses = fem.Function(V_stress, name="stress")
-#stresses.interpolate(stress_expr.sub(0))
-#.sub(0)
-
-# Heat solver
-alpha = 3
-beta = 1.2
-u_D = ufl.Expression('1 + x[0]*x[0] + alpha*x[1]*x[1] + beta*t',
-                 degree=2, alpha=alpha, beta=beta, t=0)
-VT = fem.FunctionSpace(domain, ('DG', 1))
-bcT = fem.DirichletBC(VT, u_D, boundary)
-
-
-
-
-with io.XDMFFile(domain.comm, "output.xdmf", "w") as xdmf:
-    xdmf.write_mesh(domain)
-    xdmf.write_function(uh)
-    xdmf.write_function(vm_stresses)
-    #xdmf.write_function(stresses)
+    # Check the equality of displacement based and mixed condensed global
+    # matrices, i.e. check that condensation is exact
+    assert np.isclose((A - A_cond).norm(), 0.0)

@@ -12,8 +12,6 @@ def runThermoMech():
 
     msh, cell_markers, facet_markers = gmshio.read_from_msh("Resultfiles/Mesh.msh", MPI.COMM_WORLD, 0, gdim=2)
     domain = msh
-    L = 1.
-    R = 0.1
 
     # --------------- Loading inputs ------------------#
 
@@ -32,6 +30,7 @@ def runThermoMech():
 
     Vue = ufl.VectorElement('CG', domain.ufl_cell(), 2)  # displacement finite element
     Vte = ufl.FiniteElement('CG', domain.ufl_cell(), 1)  # temperature finite element
+
 
     mixed_el = ufl.MixedElement([Vue, Vte])
     V = FunctionSpace(domain, mixed_el)

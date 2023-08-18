@@ -10,12 +10,12 @@ from petsc4py.PETSc import ScalarType
 
 from MeshConverter import convert_mesh
 from UC_FEMsolver2D import runFEM
-from UC_Heatsolver import *
+from UC_Heatsolvertest import *
 from ThermoMech import runThermoMech
 from UC_Phasesolver import runPhase
+from Linearelast import runelast
 
 convert_mesh()
-#runFEM()
-runThermoMech()
-runHeat()
+runFEM()
+#runThermoMech()
 #runPhase()

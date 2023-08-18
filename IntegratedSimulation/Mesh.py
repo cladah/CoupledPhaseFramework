@@ -52,7 +52,9 @@ def mesh2D(r1, r2):
     factory.addPlaneSurface([4], 1)
     factory.synchronize()
     model.addPhysicalGroup(2, [1], name="My surface")
-    model.addPhysicalGroup(1, [1, 2, 3], 5, name='boundaries')
+    model.addPhysicalGroup(1, [3], name='Outside')
+    model.addPhysicalGroup(1, [1], name='xaxis')
+    model.addPhysicalGroup(1, [2], name='yaxis')
     # ----------------------
 
     model.mesh.generate(2)

@@ -20,18 +20,7 @@ def start():
         # runplot(modelvar)
 
     elif inputvariable == "Test":
-        createresultfile(modelvar)
-        createcachfile(modelvar)
-        createmesh(modelvar)
-
-        #[displacement, err] = sphericalsolver(1,modelvar)
-        saveresult("displacement",displacement)
-        plotstrain(modelvar)
-        plotdisplacement(modelvar)
-        #strains = getstrains(modelvar, results['displacement'])
-        #sigma = getstresses(modelvar, strains)
-        #createResults(modelvar, results['displacement'])
-        #plotstrain(modelvar)
+        rundocker(modelvar)
 
 if __name__ == "__main__":
     start()
