@@ -22,8 +22,8 @@ def start():
         with h5py.File('C:/Users/ClasD/Documents/GitHub/CoupledPhaseFramework/IntegratedSimulation/Resultfiles/displacement.h5', "r") as f:
             disp = f['Function']['Displacement']['0'][...]
             print(disp)
-            temp = f['Function']['Temperature']['0'][...]
-            print(temp)
+            #temp = f['Function']['Temperature']['0'][...]
+            #print(temp)
 
     elif inputvariable == "Test":
         rundocker(modelvar)

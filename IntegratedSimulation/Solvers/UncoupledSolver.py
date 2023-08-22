@@ -9,7 +9,7 @@ from petsc4py.PETSc import ScalarType
 
 
 from MeshConverter import convert_mesh
-from Testsolver import runFEM
+from UC_FEMsolver import runFEM
 from demo_stokes import runDEMO
 from UC_Heatsolvertest import *
 from ThermoMech import runThermoMech

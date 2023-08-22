@@ -150,7 +150,6 @@ def runFEM():
 
     a = ufl.inner(sig(u), eps(du)) * ufl.dx
     L = ufl.dot(f, du) * ufl.dx
-
     #solver.solve(b, uh.vector)
     #problem = fem.petsc.LinearProblem(a, L, bcs=bcs, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
     #uh = problem.solve()
