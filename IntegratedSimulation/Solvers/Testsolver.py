@@ -1,123 +1,197 @@
-from pathlib import Path
+import numpy as np
+from mpi4py import MPI
+from petsc4py.PETSc import ScalarType
+from petsc4py import PETSc
+from dolfinx import mesh, fem, io, nls
+from dolfinx.io import gmshio
+import ufl
+import gmsh
 
-    import numpy as np
 
-    import ufl
-    from dolfinx import geometry
-    from dolfinx.cpp.fem import Form_complex128, Form_float64
-    from dolfinx.fem import (Function, FunctionSpace, IntegralType, dirichletbc,
-                             form, locate_dofs_topological)
-    from dolfinx.fem.petsc import (apply_lifting, assemble_matrix, assemble_vector,
-                                   set_bc)
-    from dolfinx.io import XDMFFile
-    from dolfinx.jit import ffcx_jit
-    from dolfinx.mesh import locate_entities_boundary, meshtags
-
-    from mpi4py import MPI
-    from petsc4py import PETSc
 
 def runFEM():
 
+    # --------------- Loading mesh ------------------#
+    gmsh.initialize()
+    gmsh.model.add("QuarterCirc")
+    gdim = 2
+    gmsh.model.occ.addDisk(0, 0, 0, 1, 1)
+    gmsh.model.occ.addRectangle(0, 0, 0, 1, 1, 2)
+    gmsh.model.occ.intersect([(gdim, 1)], [(gdim, 2)], 3)
+    gmsh.model.occ.synchronize()
 
-    infile = XDMFFile(MPI.COMM_WORLD, Path(Path(__file__).parent, "data", "cooks_tri_mesh.xdmf"),
-                      "r", encoding=XDMFFile.Encoding.ASCII)
-    msh = infile.read_mesh(name="Grid")
-    infile.close()
+    gmsh.model.addPhysicalGroup(gdim, [3], 1)
+    gmsh.option.setNumber("Mesh.CharacteristicLengthMin", 0.02)
+    gmsh.option.setNumber("Mesh.CharacteristicLengthMax", 0.03)
+    gmsh.model.mesh.generate(gdim)
+    gmsh_model_rank = 0
+    mesh_comm = MPI.COMM_WORLD
+    domain, cell_markers, facet_markers = gmshio.model_to_mesh(gmsh.model, mesh_comm, gmsh_model_rank, gdim=gdim)
 
-    # Stress (Se) and displacement (Ue) elements
-    Se = ufl.TensorElement("DG", msh.ufl_cell(), 1, symmetry=True)
-    Ue = ufl.VectorElement("Lagrange", msh.ufl_cell(), 2)
+    # --------------- Loading input ------------------#
+    E = 1.0e9
+    nu = 0.3
+    mu = E / (2.0 * (1.0 + nu))
+    lmbda = E * nu / ((1.0 + nu) * (1.0 - 2.0 * nu))
 
-    S = FunctionSpace(msh, Se)
-    U = FunctionSpace(msh, Ue)
+    rho = fem.Constant(domain, 2700.)
+    alpha = fem.Constant(domain, 2.31e-5)
+    k = fem.Constant(domain, 237e-6)
+    kappa = alpha * (2 * mu + 3 * lmbda)
+    cV = fem.Constant(domain, 910e-6) * rho
+    T0 = fem.Constant(domain, 293.)
 
-    # Get local dofmap sizes for later local tensor tabulations
-    Ssize = S.element.space_dimension
-    Usize = U.element.space_dimension
+    # --------------- Formulating mixed element ------------------#
+    V_el = ufl.VectorElement("CG", domain.ufl_cell(), 2) # Displacement
+    W_el = ufl.FiniteElement("CG", domain.ufl_cell(), 1) # Heat
+    P_el = ufl.FiniteElement("CG", domain.ufl_cell(), 1) # Phases
+    Mix_el = ufl.MixedElement([V_el, W_el, P_el])
+    V = fem.FunctionSpace(domain, Mix_el)
 
-    sigma, tau = ufl.TrialFunction(S), ufl.TestFunction(S)
-    u, v = ufl.TrialFunction(U), ufl.TestFunction(U)
+    num_subs = V.num_sub_spaces
+    spaces = []
+    maps = []
+    for i in range(num_subs):
+        space_i, map_i = V.sub(i).collapse()
+        spaces.append(space_i)
+        maps.append(map_i)
 
-    # Locate all facets at the free end and assign them value 1. Sort the
-    # facet indices (requirement for constructing MeshTags)
-    free_end_facets = np.sort(locate_entities_boundary(msh, 1, lambda x: np.isclose(x[0], 48.0)))
-    mt = meshtags(msh, 1, free_end_facets, 1)
+    # --------------- Boundary conditions ------------------#
+    def yaxis(x):
+        return np.isclose(x[0], 0)
 
-    ds = ufl.Measure("ds", subdomain_data=mt)
+    def xaxis(x):
+        return np.isclose(x[1], 0)
 
-    # Homogeneous boundary condition in displacement
-    u_bc = Function(U)
-    u_bc.x.array[:] = 0.0
+    fdim = domain.topology.dim - 1
+    yaxis_facets = mesh.locate_entities_boundary(domain, fdim, yaxis)
+    xaxis_facets = mesh.locate_entities_boundary(domain, fdim, xaxis)
 
-    # Displacement BC is applied to the left side
-    left_facets = locate_entities_boundary(msh, 1, lambda x: np.isclose(x[0], 0.0))
-    bdofs = locate_dofs_topological(U, 1, left_facets)
-    bc = dirichletbc(u_bc, bdofs)
+    u_D = np.array(0.0, dtype=ScalarType)
+    T_D = np.array(100.0, dtype=ScalarType)
+    # --------------- Displacement field
+    xbc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, xaxis_facets), V.sub(0).sub(0))  # sub defines the component
+    ybc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, yaxis_facets), V.sub(0).sub(1))  # sub defines the component
+    # --------------- Temperature field
+    Txbc = fem.dirichletbc(T_D, fem.locate_dofs_topological(V, fdim, xaxis_facets), V.sub(1))  # sub defines the component
+    # --------------- Phase field
+    Pxbc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, xaxis_facets), V.sub(2))  # sub defines the component
+    # --------------- Total
+    bcs = [xbc, ybc, Txbc, Pxbc]
 
-    # Elastic stiffness tensor and Poisson ratio
-    E, nu = 1.0, 1.0 / 3.0
+    # --------------- Loading ------------------#
+    f = fem.Constant(domain, (PETSc.ScalarType(100), PETSc.ScalarType(100)))
+    Toutside = fem.Constant(domain, (PETSc.ScalarType(10), PETSc.ScalarType(10)))
 
-    def sigma_u(u):
-        """Constitutive relation for stress-strain. Assuming plane-stress in XY"""
-        eps = 0.5 * (ufl.grad(u) + ufl.grad(u).T)
-        sigma = E / (1. - nu ** 2) * ((1. - nu) * eps + nu * ufl.Identity(2) * ufl.tr(eps))
-        return sigma
+    # --------------- Variational formulation ------------------#
+    u, T, psi = ufl.TrialFunctions(V)
+    du, dT, dpsi = ufl.TestFunctions(V)
 
-    a00 = ufl.inner(sigma, tau) * ufl.dx
-    a10 = - ufl.inner(sigma, ufl.grad(v)) * ufl.dx
-    a01 = - ufl.inner(sigma_u(u), tau) * ufl.dx
+    # Defining loading function
+    Uold = fem.Function(V)
+    uold, Thetaold, psiold = ufl.split(Uold)
+    #w_n = fem.Function(V)
+    #u_n, p_n, r_n = ufl.split(w_n)
 
-    f = ufl.as_vector([0.0, 1.0 / 16])
-    b1 = form(- ufl.inner(f, v) * ds(1))
+    def eps(u):
+        return ufl.sym(ufl.grad(u))
+    def sig(v):
+        """Return an expression for the stress σ given a displacement field"""
+        return 2.0 * mu * eps(v) + lmbda * ufl.nabla_div(v) * ufl.Identity(len(v))
 
-    # JIT compile individual blocks tabulation kernels
-    nptype = "complex128" if np.issubdtype(PETSc.ScalarType, np.complexfloating) else "float64"
-    ffcxtype = "double _Complex" if np.issubdtype(PETSc.ScalarType, np.complexfloating) else "double"
-    ufcx_form00, _, _ = ffcx_jit(msh.comm, a00, form_compiler_options={"scalar_type": ffcxtype})
-    kernel00 = getattr(ufcx_form00.integrals(0)[0], f"tabulate_tensor_{nptype}")
-    ufcx_form01, _, _ = ffcx_jit(msh.comm, a01, form_compiler_options={"scalar_type": ffcxtype})
-    kernel01 = getattr(ufcx_form01.integrals(0)[0], f"tabulate_tensor_{nptype}")
-    ufcx_form10, _, _ = ffcx_jit(msh.comm, a10, form_compiler_options={"scalar_type": ffcxtype})
-    kernel10 = getattr(ufcx_form10.integrals(0)[0], f"tabulate_tensor_{nptype}")
+    def eps_th(u):
+        return k * ufl.inner(ufl.grad(T), ufl.grad(dT)) * ufl.dx
 
-    # Prepare a Form with a condensed tabulation kernel
-    Form = Form_float64 if PETSc.ScalarType == np.float64 else Form_complex128
+    def sigtest(u,Theta):
+        return (lmbda * ufl.tr(eps(u)) - kappa * Theta) * ufl.Identity(len(u)) + 2 * mu * eps(u)
 
-    integrals = {IntegralType.cell: ([(-1, tabulate_condensed_tensor_A.address)], None)}
-    a_cond = Form([U._cpp_object, U._cpp_object], integrals, [], [], False, None)
+    # --------------- Problem formulation ------------------#
+    #a = ufl.inner(sig(u), eps(du)) * ufl.dx
+    #L = ufl.dot(f, du) * ufl.dx
+    #F = ufl.inner(sig(u), eps(du)) * ufl.dx - ufl.dot(f, du) * ufl.dx
+    #a = fem.form(ufl.lhs(F))
+    #L = fem.form(ufl.rhs(F))
+    dt = fem.Constant(domain, 0.1)
+    mech_form = ufl.inner(sigtest(du, dT), eps(u)) * ufl.dx + ufl.inner(f, du) * ufl.dx
+    therm_form = (cV * (dT - Thetaold) / dt * T + kappa * T0 * ufl.tr(eps(du - uold)) / dt * T + ufl.dot(k * ufl.grad(dT), ufl.grad(T))) * ufl.dx
+    F = mech_form + therm_form
+    a = fem.form(ufl.lhs(F))
+    L = fem.form(ufl.rhs(F))
 
-    A_cond = assemble_matrix(a_cond, bcs=[bc])
-    A_cond.assemble()
+    a = fem.form(ufl.inner(sig(u), eps(du)) * ufl.dx)
+    L = fem.form(ufl.dot(f, du) * ufl.dx)
 
-    b = assemble_vector(b1)
-    apply_lifting(b, [a_cond], bcs=[[bc]])
-    b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
-    set_bc(b, [bc])
-
-    uc = Function(U)
-    solver = PETSc.KSP().create(A_cond.getComm())
-    solver.setOperators(A_cond)
-    solver.solve(b, uc.vector)
-
-    # Pure displacement based formulation
-    a = form(- ufl.inner(sigma_u(u), ufl.grad(v)) * ufl.dx)
-    A = assemble_matrix(a, bcs=[bc])
+    # Left hand side
+    uh = fem.Function(V)
+    A = fem.petsc.assemble_matrix(a, bcs=bcs)
     A.assemble()
 
-    # Create bounding box for function evaluation
-    bb_tree = geometry.BoundingBoxTree(msh, 2)
+    # Right hand side
+    b = fem.petsc.assemble_vector(L)
+    fem.petsc.apply_lifting(b, [a], [bcs])
+    b.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
+    fem.petsc.set_bc(b, bcs)
 
-    # Check against standard table value
-    p = np.array([48.0, 52.0, 0.0], dtype=np.float64)
-    cell_candidates = geometry.compute_collisions(bb_tree, p)
-    cells = geometry.compute_colliding_cells(msh, cell_candidates, p)
+    # Solver
+    solver = PETSc.KSP().create(domain.comm)
+    solver.setOperators(A)
+    #solver.setType(PETSc.KSP.Type.PREONLY)
+    solver.setType(PETSc.KSP.Type.BCGS)
+    solver.getPC().setType(PETSc.PC.Type.LU)
 
-    uc.x.scatter_forward()
-    if len(cells) > 0:
-        value = uc.eval(p, cells[0])
-        print(value[1])
-        assert np.isclose(value[1], 23.95, rtol=1.e-2)
+    Problem = fem.petsc.NonlinearProblem(F, uh, bcs=bcs)
+    solver = nls.petsc.NewtonSolver(mesh.comm, Problem)
+    # Absolute tolerance
+    solver.atol = 5E-10
+    # relative tolerance
+    solver.rtol = 1E-11
+    solver.convergence_criterion = " incremental "
+    solver.solve(uh)
 
-    # Check the equality of displacement based and mixed condensed global
-    # matrices, i.e. check that condensation is exact
-    assert np.isclose((A - A_cond).norm(), 0.0)
+    a = ufl.inner(sig(u), eps(du)) * ufl.dx
+    L = ufl.dot(f, du) * ufl.dx
+
+    #solver.solve(b, uh.vector)
+    #problem = fem.petsc.LinearProblem(a, L, bcs=bcs, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
+    #uh = problem.solve()
+    #problem = fem.petsc.LinearProblem(a, L, bcs=bcs, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
+    #uh = problem.solve()
+    disp, temp, phase = uh.split() # Splitting solution into field arrays
+    disp.name = "Displacement"
+    temp.name = "Temperature"
+    phase.name = "Phasefraction"
+
+    #therm_form = (cV * (dT - Thetaold) / dt * T + kappa * T0 * ufl.tr(eps(du - uold)) / dt * T + ufl.dot(k * ufl.grad(dT), ufl.grad(T))) * ufl.dx
+
+
+    # F = fem.form(ufl.inner(sig(u), ufl.grad(v)) * ufl.dx - ufl.inner(f, v) * ufl.dx)
+    # a = fem.form(ufl.inner(sig(u), ufl.grad(v)) * ufl.dx)
+    # L = fem.form(ufl.inner(f, v) * ufl.dx)
+    #A = fem.petsc.assemble_matrix(a, bcs=bcs)
+    #A.assemble()
+
+    #b = fem.petsc.assemble_vector(L)
+    #fem.petsc.apply_lifting(b, [a], bcs=[[bcs]])
+    #fem.petsc.set_bc(b, [bcs])
+    #uh = fem.Function(V)
+    #problem = fem.petsc.NonlinearProblem(F, u, bcs)
+    #solver = PETSc.KSP().create(domain.comm)
+    #solver.setFromOptions()
+    #solver.setOperators(A)
+    #solver = nls.petsc.NewtonSolver(domain.comm, problem)
+
+
+
+    # F_heat = k * inner(grad(T), grad(q)) * dx - alpha * T * div(u) * q * dx
+    # F_disp = inner(sym(nabla_grad(u)), grad(v)) * dx
+    # F =F_disp + F_heat
+
+
+
+
+
+    with io.XDMFFile(domain.comm, "Resultfiles/displacement.xdmf", "w") as xdmf:
+        xdmf.write_mesh(domain)
+        xdmf.write_function(disp)
+        xdmf.write_function(temp)
+    #    xdmf.write_function(phase)

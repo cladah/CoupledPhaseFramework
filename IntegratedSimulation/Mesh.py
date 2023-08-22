@@ -32,32 +32,18 @@ def mesh2D(r1, r2):
     import gmsh
 
     gmsh.initialize()
-    model = gmsh.model()
-    model.add("sphere")
-    model.set_current('sphere')
+    gmsh.model.add("QuarterCirc")
+    gdim = 2
+    gmsh.model.occ.addDisk(0, 0, 0, 1, 1)
+    gmsh.model.occ.addRectangle(0, 0, 0, 1, 1, 2)
+    gmsh.model.occ.intersect([(gdim, 1)], [(gdim, 2)], 3)
+    gmsh.model.occ.synchronize()
 
-    factory = model.geo
-
-    lcent = r2 / 50
-    lcirc = r2 / 50
-
-    factory.addPoint(0, 0, 0, lcent, 1)
-    factory.addPoint(r2, 0, 0, lcirc, 2)
-    factory.addPoint(0, r2, 0, lcirc, 3)
-    factory.addLine(3, 1, 1)
-    factory.addLine(1, 2, 2)
-    factory.addCircleArc(2, 1, 3, 3)
-
-    factory.addCurveLoop([1, 2, 3], 4)
-    factory.addPlaneSurface([4], 1)
-    factory.synchronize()
-    model.addPhysicalGroup(2, [1], name="My surface")
-    model.addPhysicalGroup(1, [3], name='Outside')
-    model.addPhysicalGroup(1, [1], name='xaxis')
-    model.addPhysicalGroup(1, [2], name='yaxis')
+    gmsh.model.addPhysicalGroup(gdim, [3], 1)
+    gmsh.option.setNumber("Mesh.CharacteristicLengthMin", 0.02)
+    gmsh.option.setNumber("Mesh.CharacteristicLengthMax", 0.03)
+    gmsh.model.mesh.generate(gdim)
     # ----------------------
-
-    model.mesh.generate(2)
     gmsh.write("Resultfiles/Mesh.msh")
     gmsh.write("Resultfiles/Mesh.vtk")
     gmsh.finalize()
