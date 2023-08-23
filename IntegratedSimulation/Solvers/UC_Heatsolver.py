@@ -13,94 +13,128 @@ from petsc4py import PETSc
 def runHeat():
     # --------------- Loading mesh ------------------#
 
-    msh, cell_markers, facet_markers = gmshio.read_from_msh("Resultfiles/Mesh.msh", MPI.COMM_WORLD, 0, gdim=2)
-    msh.name = 'Sphere'
-    #with io.XDMFFile(MPI.COMM_WORLD, "Resultfiles/Mesh.xdmf", "r") as file:
-    #    msh = file.read_mesh(name="Sphere")
-    domain = msh
+    domain, cell_markers, facet_markers = gmshio.read_from_msh("Resultfiles/Mesh.msh", MPI.COMM_WORLD, 0, gdim=2)
+
+    # --------------- Creating function space ------------------#
+    V = fem.FunctionSpace(domain, ("CG", 1))
 
     # --------------- Loading inputs ------------------#
-
     t = 0  # Start time
-    T = 1.0  # Final time
+    T = 2.0  # Final time
 
     num_steps = 50
     dt = T / num_steps  # time step size
 
-    # --------------- Creating function space ------------------#
-
-    V = fem.FunctionSpace(domain, ("CG", 1))
+    # Material input
+    rho = fem.Constant(domain, 2700.)
+    cV = fem.Constant(domain, 910e-6) * rho
+    k = fem.Constant(domain, 237e-6)
 
     # --------------- Assigning initial conditions ------------------#
-    def initial_condition(x, a=5):
-        return np.exp(-a * (x[0] ** 2 + x[1] ** 2))+800
+    def initial_condition(x):
+        return np.isreal(x[0])*800.
 
-    u_n = fem.Function(V)
-    u_n.name = "u_n"
-    u_n.interpolate(initial_condition)
-
-    u_bc = fem.Function(V)
-    fdim = domain.topology.dim - 1
-    boundary_facets = mesh.locate_entities_boundary(
-        domain, fdim, lambda x: np.full(x.shape[1], True, dtype=bool))
-    outside_facets = facet_markers.find(2)
-    outside_dofs = fem.locate_dofs_topological(V, domain.topology.dim - 1, outside_facets)
+    T0 = fem.Function(V)
+    T0.name = "Initial temperature"
+    T0.interpolate(initial_condition)
 
     # --------------- Finding boundary conditions ------------------#
-    def ysym_boundary(x):
-        return np.isclose(x[0], 0)
+    def yaxis(x):
+        return np.isclose(x[0], 0.)
 
-    def xsym_boundary(x):
-        return np.isclose(x[1], 0)
+    def xaxis(x):
+        return np.isclose(x[1], 0.)
 
-    def circumf_boundary(x):
-        return np.isclose(np.sqrt(x[0]**2+x[1]**2), 1) # Insert radius
+    fdim = 1
+    ndim = 0
+    yaxis_facets = mesh.locate_entities_boundary(domain, fdim, yaxis)
+    xaxis_facets = mesh.locate_entities_boundary(domain, fdim, xaxis)
 
+    # --------------- boundary condition value
+    u_D = np.array(0.0, dtype=ScalarType)
 
-    #u_zero = np.array((0,) * mesh.geometry.dim, dtype=ScalarType)
-    #bcxsym = fem.dirichletbc(u_zero, fem.locate_dofs_geometrical(V, xsym_boundary), V)
-    #bcysym = fem.dirichletbc(u_zero, fem.locate_dofs_geometrical(V, ysym_boundary), V)
-    bccirc = fem.dirichletbc(PETSc.ScalarType(200), fem.locate_dofs_geometrical(V, circumf_boundary), V)
-    #bcs = [bcxsym, bcysym, bccirc]
+    # --------------- Temperature field
+    xbc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, xaxis_facets), V)  # sub defines the component, y on xaxis
+    ybc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, yaxis_facets), V)  # sub defines the component x on yaxis
+    # --------------- Total
+    bcs = [xbc, ybc]
+    bcs = []
 
+    # --------------- Outside surface loading ------------------#
+    def outside(x):
+        return np.isclose(np.sqrt(x[0] ** 2 + x[1] ** 2), 1.)
 
-    #bc = fem.dirichletbc(PETSc.ScalarType(0), outside_dofs, V)
-    #bc = fem.dirichletbc(PETSc.ScalarType(200), fem.locate_dofs_topological(V, fdim, circumf_boundary), V)
-    bc = bccirc
+    outside_f = mesh.locate_entities(domain, fdim, outside)
+    marked_values = np.hstack([np.full_like(outside_f, 1)])
+    outside_ft = mesh.meshtags(domain, fdim, outside_f, marked_values)
+
+    f = fem.Constant(domain, ScalarType(200.))
+    ds = ufl.Measure("ds", domain=domain, subdomain_data=outside_ft)
+    n = ufl.FacetNormal(domain)
 
     # --------------- Setting up  ------------------#
 
-    xdmf = io.XDMFFile(domain.comm, "Resultfiles/diffusion.xdmf", "w")
+    xdmf = io.XDMFFile(domain.comm, "Resultfiles/Temperature.xdmf", "w")
     xdmf.write_mesh(domain)
 
-    # Define solution variable, and interpolate initial solution for visualization in Paraview
-    uh = fem.Function(V)
-    uh.name = "Temperature"
-    uh.interpolate(initial_condition)
-    xdmf.write_function(uh, t)
+    temp = fem.Function(V)
+    temp.name = "Temperature"
+    temp.interpolate(initial_condition)
+    xdmf.write_function(temp, t)
 
-    u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
-    f = fem.Constant(domain, PETSc.ScalarType(0))
-    uold = ufl.Function(V)
-    a = u * v * ufl.dx + dt * ufl.dot(ufl.grad(u), ufl.grad(v)) * ufl.dx
-    L = (u_n + dt * f) * v * ufl.dx
+    # --------------- Variational formulation ------------------#
+    T, dT = ufl.TrialFunction(V), ufl.TestFunction(V)
+    Told = fem.Function(V)
+    Told.name = "Incremental temperature"
+    Told.interpolate(initial_condition)
 
-    # therm_form = (cV * (dTheta - Thetaold) / dt * Theta_ +
-    #                   kappa * T0 * ufl.tr(eps(du - uold)) / dt * Theta_ +
-    #                   ufl.dot(k * ufl.grad(dTheta), ufl.grad(Theta_))) * ufl.dx
+    # --------------- Problem formulation ------------------#
 
-    bilinear_form = fem.form(a)
-    linear_form = fem.form(L)
+    # a = cV * T * (dT) * ufl.dx + k * dt * ufl.dot(ufl.grad(T), ufl.grad(dT)) * ufl.dx
+    # L = u_n * dT * ufl.dx + f * dT * ds
 
-    A = fem.petsc.assemble_matrix(bilinear_form, bcs=[bc])
+    # therm_form = (cV * (dT - Thetaold) / dt * T +
+    #                   kappa * T0 * ufl.tr(eps(du - uold)) / dt * T +
+    #                   ufl.dot(k * ufl.grad(dT), ufl.grad(T))) * ufl.dx
+    # therm_form = (cV * (dT - Thetaold) / dt * T + ufl.dot(k * ufl.grad(dT), ufl.grad(T))) * ufl.dx
+
+    #bilinear_form = fem.form(a)
+    #linear_form = fem.form(L)
+
+
+    for i in range(num_steps):
+        # Updating solution time
+        t += dt
+
+        a = cV * T * dT * ufl.dx + k * dt * ufl.dot(ufl.grad(T), ufl.grad(dT)) * ufl.dx
+        L = T0 * dT * ufl.dx + f * dT * ds
+
+        a = cV * T * dT * ufl.dx + k * dt * ufl.dot(ufl.grad(T), ufl.grad(dT)) * ufl.dx
+        L = cV * T0 * dT * ufl.dx + f * dT * ds
+
+        a = T * dT * ufl.dx + dt * ufl.dot(ufl.grad(T), ufl.grad(dT)) * ufl.dx
+        L = (T0 + dt * f) * dT * ufl.dx
+        # setting up problem and solver
+        problem = fem.petsc.LinearProblem(a, L, bcs=bcs, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
+        temp = problem.solve()
+
+        # Updating the temperature vector with the ith solution before next iteration
+        Told.x.array[:] = temp.x.array
+
+        # Writing into result file
+        xdmf.write_function(temp, t)
+
+    return
+    A = fem.petsc.assemble_matrix(bilinear_form, bcs=bcs)
     A.assemble()
     b = fem.petsc.create_vector(linear_form)
 
     solver = PETSc.KSP().create(domain.comm)
     solver.setOperators(A)
     solver.setType(PETSc.KSP.Type.PREONLY)
-    solver.getPC().setType(PETSc.PC.Type.LU)
+    solver.getPC().setType(PETSc.PC.Type.LU) # Linear solver
 
+    # Loops over timesteps
     for i in range(num_steps):
         t += dt
 
@@ -110,9 +144,9 @@ def runHeat():
         fem.petsc.assemble_vector(b, linear_form)
 
         # Apply Dirichlet boundary condition to the vector
-        fem.petsc.apply_lifting(b, [bilinear_form], [[bc]])
+        fem.petsc.apply_lifting(b, [bilinear_form], [bcs])
         b.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
-        fem.petsc.set_bc(b, [bc])
+        fem.petsc.set_bc(b, bcs)
 
         # Solve linear problem
         solver.solve(b, uh.vector)

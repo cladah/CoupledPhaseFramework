@@ -34,8 +34,8 @@ def mesh2D(r1, r2):
     gmsh.initialize()
     gmsh.model.add("QuarterCirc")
     gdim = 2
-    gmsh.model.occ.addDisk(0, 0, 0, 1, 1)
-    gmsh.model.occ.addRectangle(0, 0, 0, 1, 1, 2)
+    gmsh.model.occ.addDisk(0, 0, 0, r2, 1)
+    gmsh.model.occ.addRectangle(0, 0, 0, r2, r2, 2)
     gmsh.model.occ.intersect([(gdim, 1)], [(gdim, 2)], 3)
     gmsh.model.occ.synchronize()
 
@@ -47,4 +47,7 @@ def mesh2D(r1, r2):
     gmsh.write("Resultfiles/Mesh.msh")
     gmsh.write("Resultfiles/Mesh.vtk")
     gmsh.finalize()
-    # domain, cell_markers, facet_markers = gmshio.model_to_mesh(model, MPI.COMM_WORLD, 0)
+
+    #gmsh_model_rank = 0
+    #mesh_comm = MPI.COMM_WORLD
+    #domain, cell_markers, facet_markers = gmshio.model_to_mesh(gmsh.model, mesh_comm, gmsh_model_rank, gdim=gdim)

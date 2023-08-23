@@ -12,21 +12,7 @@ import gmsh
 def runFEM():
 
     # --------------- Loading mesh ------------------#
-    gmsh.initialize()
-    gmsh.model.add("QuarterCirc")
-    gdim = 2
-    gmsh.model.occ.addDisk(0, 0, 0, 1, 1)
-    gmsh.model.occ.addRectangle(0, 0, 0, 1, 1, 2)
-    gmsh.model.occ.intersect([(gdim, 1)], [(gdim, 2)], 3)
-    gmsh.model.occ.synchronize()
-
-    gmsh.model.addPhysicalGroup(gdim, [3], 1)
-    gmsh.option.setNumber("Mesh.CharacteristicLengthMin", 0.02)
-    gmsh.option.setNumber("Mesh.CharacteristicLengthMax", 0.03)
-    gmsh.model.mesh.generate(gdim)
-    gmsh_model_rank = 0
-    mesh_comm = MPI.COMM_WORLD
-    domain, cell_markers, facet_markers = gmshio.model_to_mesh(gmsh.model, mesh_comm, gmsh_model_rank, gdim=gdim)
+    domain, cell_markers, facet_markers = gmshio.read_from_msh("Resultfiles/Mesh.msh", MPI.COMM_WORLD, 0, gdim=2)
 
     # --------------- Loading input ------------------#
     E = 1.0e9
@@ -35,7 +21,7 @@ def runFEM():
     lmbda = E * nu / ((1.0 + nu) * (1.0 - 2.0 * nu))
 
     # --------------- Formulating mixed element ------------------#
-    V = fem.VectorFunctionSpace(domain, ("CG", 2), dim=2)
+    V = fem.VectorFunctionSpace(domain, ("Lagrange", 1), dim=2)
 
     # --------------- Boundary conditions ------------------#
     def yaxis(x):
@@ -43,25 +29,32 @@ def runFEM():
 
     def xaxis(x):
         return np.isclose(x[1], 0.)
-    def corner(x):
-        return np.isclose(x[0]+x[1],0.)
 
-    fdim = domain.topology.dim - 1
-    yaxis_facets = mesh.locate_entities_boundary(domain, fdim, yaxis)
-    xaxis_facets = mesh.locate_entities_boundary(domain, fdim, xaxis)
-    corner_f = mesh.locate_entities(domain, fdim, corner)
+    fdim = 1
+    ndim = 0
+    yaxis_facets = mesh.locate_entities_boundary(domain, ndim, yaxis)
+    xaxis_facets = mesh.locate_entities_boundary(domain, ndim, xaxis)
 
+    # --------------- boundary condition value
     u_D = np.array(0.0, dtype=ScalarType)
+
     # --------------- Displacement field
-    xbc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, xaxis_facets), V.sub(1))  # sub defines the component
-    cornbc = fem.dirichletbc(np.array((0.0,0.0), dtype=ScalarType), fem.locate_dofs_topological(V, fdim, corner_f), V)  # sub defines the component
-    #ybc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, yaxis_facets), V.sub(0))  # sub defines the component
+    xbc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V.sub(1), ndim, xaxis_facets), V.sub(1))  # sub defines the component, y on xaxis
+    ybc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V.sub(0), ndim, yaxis_facets), V.sub(0))  # sub defines the component x on yaxis
     # --------------- Total
-    #bcs = [xbc, ybc]
-    bcs = [cornbc]
+    bcs = [xbc, ybc]
 
     # --------------- Loading ------------------#
-    f = fem.Constant(domain, (1000., 1000.))
+    def outside(x):
+        return np.isclose(np.sqrt(x[0]**2+x[1]**2), 1.)
+
+    outside_f = mesh.locate_entities(domain, 1, outside)
+    marked_values = np.hstack([np.full_like(outside_f, 1)])
+    outside_ft = mesh.meshtags(domain, fdim, outside_f, marked_values)
+
+    f = fem.Constant(domain, 1E9)
+    ds = ufl.Measure("ds", domain=domain, subdomain_data=outside_ft)
+    n = ufl.FacetNormal(domain)
 
     # --------------- Variational formulation ------------------#
     u = ufl.TrialFunction(V)
@@ -74,14 +67,10 @@ def runFEM():
 
     # --------------- Problem formulation ------------------#
 
-    #F = ufl.inner(sig(du), eps(u)) * ufl.dx - ufl.inner(f, du) * ufl.dx
-    #a = fem.form(ufl.lhs(F))
-    #L = fem.form(ufl.rhs(F))
-
     a = ufl.inner(sig(u), eps(du)) * ufl.dx
-    L = ufl.dot(f, du) * ufl.dx
+    L = ufl.dot(f*n, du) * ds
 
-    # Left hand side
+    # Setting up problem
     problem = fem.petsc.LinearProblem(a, L, bcs=bcs, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
     disp = problem.solve()
     disp.name = "Displacement"
