@@ -1,5 +1,3 @@
-import numpy as np
-
 
 def createMesh(modelvar):
     if modelvar["elementtype"] == "Spherical":
