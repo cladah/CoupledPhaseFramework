@@ -1,6 +1,5 @@
-from IntegratedSimulation.Solvers.RunDocker import *
-
-
+from Solvers.RunDocker import rundocker
+from Solvers.ComsolSolver import runComsol
 def modelfitting(model,x,y):
     if model == "KM":
         return 1
@@ -14,9 +13,9 @@ def modelfitting(model,x,y):
 
 def runquenching(modelvar):
     if modelvar['programs']['FEM'] == 'FCSx':
-        rundocker()
+        rundocker(modelvar)
     elif modelvar['programs']['FEM'] == 'Comsol':
-        #runcomsol(modelvar)
+        runComsol()
         pass
     else:
         raise KeyError('Program not implemented')

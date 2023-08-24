@@ -23,7 +23,7 @@ def mesh1D(r1, r2):
     gmsh.model.mesh.generate(1)
 
     gmsh.write("Resultfiles/Mesh.msh")
-    gmsh.write("Resultfiles/Mesh.vtk")
+    gmsh.write("Resultfiles/Mesh.nas")
     gmsh.finalize()
 
 def mesh2D(r1, r2):
