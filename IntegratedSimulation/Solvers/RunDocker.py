@@ -39,16 +39,14 @@ def rundocker(modelvar):
             print(log)
         print('Fenicsx calculation done!')
     else:
-        raise KeyError('Coupled solvers not implemented')
-
+        raise KeyError('Solver not implemented')
         client = docker.from_env()
-        container = client.containers.run('dolfinx/dolfinx:stable', ["python3", "CoupledSolver.py"],
+        container = client.containers.run('dolfinx/dolfinx:stable', ["python3", "Solvers/CoupledSolver.py"],
                                           detach=True,
                                           auto_remove=True,
-                                          volumes=[
-                                              'C:/Users/ClasD/Documents/GitHub/CoupledPhaseFramework/IntegratedSimulation:/root/shared'],
+                                          volumes=[dockervolume],
                                           working_dir='/root/shared',
                                           name='fenicscxcont')
         for log in container.logs(stream=True, stdout=True, stderr=True):
             print(log)
-        print('Docker closing!')
+        print('Fenicsx calculation done!')

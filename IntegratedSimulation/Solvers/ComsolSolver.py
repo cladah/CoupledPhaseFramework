@@ -26,4 +26,4 @@ def runComsol():
 
     #model.mesh().run()
     #model.solve('static')
-    model.save('model')
+    model.save('Resultfiles/model')

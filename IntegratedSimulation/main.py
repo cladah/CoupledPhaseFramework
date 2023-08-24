@@ -26,8 +26,8 @@ def start():
 
     elif inputvariable == "Test":
         createMesh(modelvar)
-        #runComsol()
-        rundocker(modelvar)
+        runComsol()
+        #rundocker(modelvar)
         #with h5py.File('C:/Users/ClasD/Documents/GitHub/CoupledPhaseFramework/IntegratedSimulation/Resultfiles/displacement.h5', "r") as f:
         #    disp = f['Function']['Displacement']['0'][...]
         #    print(disp)
