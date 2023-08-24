@@ -19,11 +19,11 @@ def runHeat():
     V = fem.FunctionSpace(domain, ("CG", 1))
 
     # --------------- Loading inputs ------------------#
-    t = 0  # Start time
-    T = 2.0  # Final time
+    tstart = 0  # Start time
+    tstop = 100.  # Final time
 
     num_steps = 50
-    dt = T / num_steps  # time step size
+    dt = tstop / num_steps  # time step size
 
     # Material input
     rho = fem.Constant(domain, 2700.)
@@ -54,19 +54,22 @@ def runHeat():
     u_D = np.array(0.0, dtype=ScalarType)
 
     # --------------- Temperature field
-    xbc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, xaxis_facets), V)  # sub defines the component, y on xaxis
+    xbc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, xaxis_facets), V)  # su§b defines the component, y on xaxis
     ybc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, yaxis_facets), V)  # sub defines the component x on yaxis
     # --------------- Total
     bcs = [xbc, ybc]
-    bcs = []
+    bcs = [] # No boundary conditions
 
     # --------------- Outside surface loading ------------------#
     def outside(x):
-        return np.isclose(np.sqrt(x[0] ** 2 + x[1] ** 2), 1.)
+        return np.isclose(x[0], 0)
+        #return np.isclose(np.sqrt(x[0] ** 2 + x[1] ** 2), 1.)
 
-    outside_f = mesh.locate_entities(domain, fdim, outside)
+    outside_f = mesh.locate_entities_boundary(domain, fdim, outside)
+    marked_facets = np.hstack([outside_f])
     marked_values = np.hstack([np.full_like(outside_f, 1)])
-    outside_ft = mesh.meshtags(domain, fdim, outside_f, marked_values)
+    sorted_facets = np.argsort(marked_facets)
+    outside_ft = mesh.meshtags(domain, fdim, marked_facets[sorted_facets], marked_values[sorted_facets])
 
     f = fem.Constant(domain, ScalarType(200.))
     ds = ufl.Measure("ds", domain=domain, subdomain_data=outside_ft)
@@ -80,7 +83,7 @@ def runHeat():
     temp = fem.Function(V)
     temp.name = "Temperature"
     temp.interpolate(initial_condition)
-    xdmf.write_function(temp, t)
+    xdmf.write_function(temp, tstart)
 
     # --------------- Variational formulation ------------------#
     T, dT = ufl.TrialFunction(V), ufl.TestFunction(V)
@@ -101,7 +104,7 @@ def runHeat():
     #bilinear_form = fem.form(a)
     #linear_form = fem.form(L)
 
-
+    t = tstart
     for i in range(num_steps):
         # Updating solution time
         t += dt
@@ -112,14 +115,15 @@ def runHeat():
         a = cV * T * dT * ufl.dx + k * dt * ufl.dot(ufl.grad(T), ufl.grad(dT)) * ufl.dx
         L = cV * T0 * dT * ufl.dx + f * dT * ds
 
-        a = T * dT * ufl.dx + dt * ufl.dot(ufl.grad(T), ufl.grad(dT)) * ufl.dx
-        L = (T0 + dt * f) * dT * ufl.dx
+        a = cV * T * dT * ufl.dx + k * dt * ufl.dot(ufl.grad(T), ufl.grad(dT)) * ufl.dx
+        L = (dt * f) * dT * ds
+
         # setting up problem and solver
         problem = fem.petsc.LinearProblem(a, L, bcs=bcs, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
         temp = problem.solve()
-
+        temp.name = "Temperature"
         # Updating the temperature vector with the ith solution before next iteration
-        Told.x.array[:] = temp.x.array
+        #Told.x.array[:] = temp.x.array
 
         # Writing into result file
         xdmf.write_function(temp, t)

@@ -2,6 +2,7 @@ import docker
 import os
 def rundocker(modelvar):
     directory = os.getcwd()
+    directory = directory.strip('\\Solvers')
     dockervolume = directory + ':/root/shared'
     dockervolume = dockervolume.replace('\\', '/')
 
@@ -10,7 +11,7 @@ def rundocker(modelvar):
     martensite = modelvar['Martensite']
     perlite = modelvar['Perlite']
     bainite = modelvar['Bainite']
-    f = open("Cachefiles/Material.txt", "w")
+    f = open(directory + "/Cachefiles/Material.txt", "w")
     f.write('Austenite ' + str(austenite.E)+' ' + str(austenite.nu)+' ' + str(austenite.alpha) + ' ' + str(austenite.f) + '\n')
     f.write('Martensite ' + str(martensite.E)+' ' + str(martensite.nu)+' ' + str(martensite.alpha) + ' ' + str(martensite.f) + '\n')
     f.write('Perlite ' + str(perlite.E)+' ' + str(perlite.nu)+' ' + str(perlite.alpha) + ' ' + str(perlite.f) + '\n')

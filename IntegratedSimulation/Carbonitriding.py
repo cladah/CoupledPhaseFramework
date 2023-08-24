@@ -1,4 +1,4 @@
-from Thermocalc import *
+from IntegratedSimulation.Solvers.Thermocalc import *
 from HelpFile import *
 
 

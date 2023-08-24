@@ -45,7 +45,7 @@ def mesh2D(r1, r2):
     gmsh.model.mesh.generate(gdim)
     # ----------------------
     gmsh.write("Resultfiles/Mesh.msh")
-    gmsh.write("Resultfiles/Mesh.vtk")
+    gmsh.write("Resultfiles/Mesh.nas")
     gmsh.finalize()
 
     #gmsh_model_rank = 0

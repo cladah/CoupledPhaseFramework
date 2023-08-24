@@ -1,4 +1,5 @@
-from IntegratedSimulation.RunDocker import rundocker
+from IntegratedSimulation.Solvers.RunDocker import *
+
 
 def modelfitting(model,x,y):
     if model == "KM":
@@ -13,7 +14,7 @@ def modelfitting(model,x,y):
 
 def runquenching(modelvar):
     if modelvar['programs']['FEM'] == 'FCSx':
-        rundocker(modelvar)
+        rundocker()
     elif modelvar['programs']['FEM'] == 'Comsol':
         #runcomsol(modelvar)
         pass
