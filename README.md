@@ -10,9 +10,11 @@ Simulation of a quenching process implemented with Thermocalc and FeniCSx/COMSOL
 - gmsh - 4.1.1
 
 **Running FeniCSx through Docker**
+
 Docker image 95b47fc536a5 - dolfinx/dolfinx:stable - FeniCSx 0.6
 
-**Running COMSOL through MPh for JAVA compatibility
+**Running COMSOL through MPh for JAVA compatibility**
+
 MPh - 1.2.3
 
 # Calculation map
