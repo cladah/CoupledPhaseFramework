@@ -3,26 +3,16 @@ import os
 def runComsol():
     directory = os.getcwd()
     directory = directory.replace('\\Solvers','\\Resultfiles')
+    meshdirec = directory + '\\Mesh.nas'
 
     client = mph.start()
-    pymodel = client.create('Model')
-    model = pymodel.java
-
-    model.component().create("comp1")
-    g = model.component('comp1').geom().create('geom1', 3)
-    m = model.component('comp1').mesh().create('Import')
-    imp1 = m.create('imp1', 'Import')
-    imp1.set('type', 'mesh')
-    imp1.set('mesh', 'mesh1')
-    m.run()
-    #model.modelNode().create("sphere")
-    #model.geom().create("Sphere", 2)
-    #model.modelNode().mesh().create("Import")
-    #model.component().mesh('Import').feature().set()
-    #model.component().mesh('Import').feature().getType()
-    #model.component().mesh('Import').feature().importData(directory)
-    #model.geom().mesh().create().import_(directory + 'Resultfiles/Mesh.nas')
-    #model.geom().feature().importData()
+    model = client.create('Sphere')
+    model.component('Sphere').geom().create('geo1', 2)
+    model.component('Sphere').geom('geo1').isaxisymmetric()
+    #model.mesh().create("mesh1", 2)
+    #model.geom("geom1").feature().create("blk1", "Block");
+    #model.geom("geom1").feature("blk1").set("size", ["0.1", "0.2", "0.5"]);
+    #model.geom("geom1").run("fin");
 
     #model.mesh().run()
     #model.solve('static')
