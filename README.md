@@ -17,6 +17,12 @@ Docker image 95b47fc536a5 - dolfinx/dolfinx:stable - FeniCSx 0.6
 
 MPh - 1.2.3
 
+**Running ThermoCalc through TC-Python**
+
+ThermoCalc 2023b
+
 # Calculation map
-Read input
--CCT calculation (Composition)->(Psi(r))
+- Read input
+- Create Mesh
+- CCT calculation (Composition)->(Psi(r))
+- Diffusion of C and N (Mesh, Composition)->(Composition(r))
