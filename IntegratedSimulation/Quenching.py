@@ -1,5 +1,6 @@
 from Solvers.RunDocker import rundocker
 from Solvers.ComsolSolver import runComsol
+from HelpFile import read_input
 def modelfitting(model,x,y):
     if model == "KM":
         return 1
@@ -11,10 +12,11 @@ def modelfitting(model,x,y):
         raise KeyError("Fitting model wrong or not implemented")
 
 
-def runquenching(modelvar):
-    if modelvar['programs']['FEM'] == 'FCSx':
-        rundocker(modelvar)
-    elif modelvar['programs']['FEM'] == 'Comsol':
+def runquenching():
+    data = read_input()
+    if data['Programs']['FEM'] == 'FCSx':
+        rundocker()
+    elif data['Programs']['FEM'] == 'Comsol':
         runComsol()
         pass
     else:

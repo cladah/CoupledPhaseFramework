@@ -1,0 +1,3 @@
+Model - "KM", "JMAK", "Devold"
+Materialtype - "Elastic", "Elasto-plastic"
+element_f - 1, 2

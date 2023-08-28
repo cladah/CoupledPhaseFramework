@@ -5,6 +5,7 @@ import ufl
 import numpy as np
 from petsc4py.PETSc import ScalarType
 from mpi4py import MPI
+from HelpFile import read_input
 
 def runFEM():
     # --------------- Loading mesh ------------------#
@@ -19,17 +20,16 @@ def runFEM():
     n = ufl.FacetNormal(domain)
 
     # --------------- Input assignment ------------------#
-
-    # Material parameters #--------------------------------- Read from file saved under /Cachefiles
-    E = fem.Constant(domain, 1e5)
-    nu = fem.Constant(domain, 0.3)
-    rho_g = 1e-3
+    indata = read_input()
+    E = fem.Constant(domain, indata["material"]["Austenite"]["E"])
+    nu = fem.Constant(domain, indata["material"]["Austenite"]["E"])
+    rho_g = fem.Constant(domain, indata["material"]["rho"])
     mu = E / 2 / (1 + nu)
     lmbda = E * nu / (1 + nu) / (1 - 2 * nu)
 
     # --------------- Creating functionspaces ------------------#
 
-    V = VectorFunctionSpace(domain, ("Lagrange", 1), dim=2)
+    V = VectorFunctionSpace(domain, ("Lagrange", indata["FEM"]["element_f"]), dim=indata["FEM"]["elementdim"])
 
     # --------------- Finding boundary conditions ------------------#
 

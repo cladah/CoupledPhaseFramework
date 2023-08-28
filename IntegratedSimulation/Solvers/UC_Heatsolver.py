@@ -8,31 +8,32 @@ import numpy as np
 #import gmsh
 from petsc4py.PETSc import ScalarType
 from petsc4py import PETSc
+from HelpFile import read_input
 
 
 def runHeat():
+    indata = read_input()
     # --------------- Loading mesh ------------------#
 
     domain, cell_markers, facet_markers = gmshio.read_from_msh("Resultfiles/Mesh.msh", MPI.COMM_WORLD, 0, gdim=2)
 
     # --------------- Creating function space ------------------#
-    V = fem.FunctionSpace(domain, ("CG", 1))
+    V = fem.FunctionSpace(domain, ("CG", indata["FEM"]["element_f"]))
 
     # --------------- Loading inputs ------------------#
     tstart = 0  # Start time
-    tstop = 100.  # Final time
+    tstop = indata["Thermo"]["quenchtime"]  # Final time
 
-    num_steps = 50
+    num_steps = indata["Thermo"]["quench_steps"]
     dt = tstop / num_steps  # time step size
-
     # Material input
-    rho = fem.Constant(domain, 2700.)
+    rho = fem.Constant(domain, indata["material"]["rho"])
     cV = fem.Constant(domain, 910e-6) * rho
-    k = fem.Constant(domain, 237e-6)
+    k = fem.Constant(domain, indata["material"]["k"])
 
     # --------------- Assigning initial conditions ------------------#
     def initial_condition(x):
-        return np.isreal(x[0])*800.
+        return np.isreal(x[0])*indata["Thermo"]["CNtemp"]
 
     T0 = fem.Function(V)
     T0.name = "Initial temperature"

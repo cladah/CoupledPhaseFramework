@@ -1,35 +1,17 @@
 import docker
 import os
-def rundocker(modelvar):
+from HelpFile import read_input
+def rundocker():
     directory = os.getcwd()
     directory = directory.strip('\\Solvers')
     dockervolume = directory + ':/root/shared'
     dockervolume = dockervolume.replace('\\', '/')
 
+    data = read_input()
 
-    austenite = modelvar['Austenite']
-    martensite = modelvar['Martensite']
-    perlite = modelvar['Perlite']
-    bainite = modelvar['Bainite']
-    f = open(directory + "/Cachefiles/Material.txt", "w")
-    f.write('Austenite ' + str(austenite.E)+' ' + str(austenite.nu)+' ' + str(austenite.alpha) + ' ' + str(austenite.f) + '\n')
-    f.write('Martensite ' + str(martensite.E)+' ' + str(martensite.nu)+' ' + str(martensite.alpha) + ' ' + str(martensite.f) + '\n')
-    f.write('Perlite ' + str(perlite.E)+' ' + str(perlite.nu)+' ' + str(perlite.alpha) + ' ' + str(perlite.f) + '\n')
-    f.write('Bainite ' + str(bainite.E)+' ' + str(bainite.nu)+' ' + str(bainite.alpha) + ' ' + str(bainite.f) + '\n')
-    f.close()
-
-    if modelvar['Coupling'] == 0:
-        if modelvar['geotype'] == 'Spherical':
-            FCSxcmd = 'Spherical_Uncoupled.py'
-        elif modelvar['geotype'] == 'Axisym':
-            FCSxcmd = 'Axisym_uncoupled.py'
-        elif modelvar['geotype'] == 'Axisym2D':
-            FCSxcmd = 'Axisym2D_uncoupled.py'
-        else:
-            raise KeyError('Docker has not implemented geometry')
-
+    if data['Programs']['Coupling'] == 0:
         client = docker.from_env()
-        container = client.containers.run('dolfinx/dolfinx:stable', ["python3", "Solvers/UncoupledSolver.py"],
+        container = client.containers.run('dolfinx/dolfinx:stable', ["python3", "Solvers/StaggeredSolver.py"],
                                           detach=True,
                                           auto_remove=True,
                                           volumes=[dockervolume],

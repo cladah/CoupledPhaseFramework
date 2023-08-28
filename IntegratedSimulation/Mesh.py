@@ -1,9 +1,10 @@
-
-def createMesh(modelvar):
-    if modelvar["elementtype"] == "Spherical":
-        mesh1D(0, modelvar['radius'])
-    elif modelvar["elementtype"] == "Axisym2D":
-        mesh2D(0, modelvar['radius'])
+from HelpFile import read_input
+def createMesh():
+    data = read_input()
+    if data['FEM']["elementtype"] == "Spherical":
+        mesh1D(0,data['Geometry']['radius'])
+    elif data['FEM']["elementtype"] == "Axisym2D":
+        mesh2D(0, data['Geometry']['radius'])
     else:
         raise KeyError('Not implemented in mesh')
 

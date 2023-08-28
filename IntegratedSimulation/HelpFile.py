@@ -1,6 +1,4 @@
 import numpy as np
-import h5py
-from datetime import datetime
 
 class Material:
     def __init__(self, name, E, nu, alpha, f):
@@ -9,37 +7,40 @@ class Material:
         self.nu = nu            # Poissons ratio [-]
         self.alpha = alpha      # Thermal expansion coefficient
         self.f = f              # Material fraction
+def read_input():
+    import json
+    f = open('Cachefiles/Input.json', 'r')
+    data = json.load(f)
+    f.close()
+    return data
 
-def createcachfile(modelvar):
-    info = np.array([modelvar["radius"], modelvar["nodesFEM"], modelvar["E"], modelvar["nu"], modelvar["shapef"],
-                     modelvar["Meshscaling"]])
-    with h5py.File("Cache.hdf5", "w") as f:
-        CNcurves = f.create_group("CNcurves")
-        CNcurves.create_dataset("C", data=0)
-        CNcurves.create_dataset("N", data=0)
-        Cache = f.create_group("Cache")
-        Cache.create_dataset("K", data=0)
-        Cache.create_dataset("B", data=0)
-        Cache.create_dataset("Mesh", data=0)
-        matrixes = f.create_group("Matrixes")
-        matrixes.create_dataset("K_FEM", data=0)
-        matrixes.create_dataset("Mesh", data=0)
-        matrixes.create_dataset("Bmatrix", data=0)
-        f.create_dataset("Info", data=info)
 
+
+def createcachfile():
+    import json
+    f = open('Cachefiles/InputCache.json', 'w')
+    data = read_input()
+    json.dump(data)
+    f.close()
+
+def checkinput():
+    pass
 
 def savetocache(dataname ,data):
+    import h5py
     with h5py.File("Cache.hdf5", "r+") as f:
         del f[dataname]
         f.create_dataset(dataname, data=data)
 
 
 def retrievecache(dataname):
+    import h5py
     with h5py.File("Cache.hdf5", "r") as f:
         data = np.array(f.get(dataname))
     return data
 
 def comparecache(dataname,data):
+    import h5py
     with h5py.File("Cache.hdf5", "r") as f:
         testdata = np.array(f.get(dataname))
     if testdata == data:
@@ -77,6 +78,7 @@ def resetcalculations():
 
 
 def createresultfile(modelvar):
+    import h5py
     cachename = "Result.hdf5"
     tmpinfo = [modelvar["E"]]
     with h5py.File(cachename, "w") as f:
@@ -85,11 +87,13 @@ def createresultfile(modelvar):
         displacements = f.create_dataset("displacement",data= 0)
 
 def saveresult(dataname,data):
+    import h5py
     with h5py.File("Result.hdf5", "r+") as f:
         del f[dataname]
         f.create_dataset(dataname, data=data)
 
 def readresultfile(dataname):
+    import h5py
     try:
         with h5py.File("Result.hdf5", "r") as f:
             data = np.array(f.get(dataname))
@@ -99,12 +103,15 @@ def readresultfile(dataname):
 
 
 def renameResultfile():
+    import h5py
+    from datetime import datetime
     now = datetime.now().strftime("%Y%m%d%H%M%S")
     cachename = "Result_" + now + ".hdf5"
     with h5py.File(cachename, "w") as f:
         CNcurves = f.create_dataset("CNcurves",data=[1,2,3])
 
 def h5_tree(val, pre=''):
+    import h5py
     items = len(val)
     for key, val in val.items():
         items -= 1
