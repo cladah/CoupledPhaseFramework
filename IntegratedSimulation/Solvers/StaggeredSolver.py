@@ -12,7 +12,7 @@ from Postprocessing.Stress import post_stress
 
 
 
-def runFEM():
+def runsolver():
     indata = read_input()
     # --------------- Loading mesh ------------------#
     domain, cell_markers, facet_markers = gmshio.read_from_msh("Resultfiles/Mesh.msh", MPI.COMM_WORLD, 0, gdim=2)
@@ -27,11 +27,12 @@ def runFEM():
     Vpsi = FunctionSpace(domain, ("Lagrange", indata["FEM"]["element_f"]))
 
     # --------------- Input assignment ------------------#
-    tstart = 0  # Start time
+    # Time
     tstop = indata["Thermo"]["quenchtime"]  # Final time
     num_steps = indata["Thermo"]["quench_steps"]
     dt = tstop / num_steps  # time step size
 
+    # Material
     E = fem.Constant(domain, indata["material"]["Austenite"]["E"])
     nu = fem.Constant(domain, indata["material"]["Austenite"]["E"])
     rho_g = fem.Constant(domain, ScalarType(indata["material"]["rho"])) * 9.82
@@ -42,8 +43,9 @@ def runFEM():
     alpha = fem.Constant(domain, indata["material"]["alpha_k"])
     Tstart = indata["Thermo"]["CNtemp"]
 
-    kM = fem.Constant(domain, 1e-5)
-    Ms = fem.Constant(domain, 400.)
+    # Models
+    beta = fem.Constant(domain, indata["Models"]["KM"]["beta"])
+    Ms = fem.Constant(domain, indata["Models"]["KM"]["Ms"])
     # --------------- Assigning initial conditions ------------------#
     def initial_condition(x):
         return np.logical_or(np.isreal(x[0]), np.isreal(x[1])) * Tstart
@@ -61,7 +63,7 @@ def runFEM():
         return np.isclose(x[1], 0.)
 
     def outside(x):
-        return np.isclose(np.sqrt(x[0] ** 2 + x[1] ** 2), 1.)
+        return np.isclose(np.sqrt(x[0] ** 2 + x[1] ** 2), indata["Geometry"]["radius"])
 
     fdim = 1
     ndim = 0
@@ -71,7 +73,7 @@ def runFEM():
 
     # --------------- boundary condition value
     u_D = np.array(0.0, dtype=ScalarType)
-    T_D = np.array(200., dtype=ScalarType)
+    T_D = np.array(293.15, dtype=ScalarType)
 
     # --------------- Displacement field
     xbc = fem.dirichletbc(u_D, fem.locate_dofs_topological(Vu.sub(1), fdim, xaxis_facets),
@@ -102,7 +104,7 @@ def runFEM():
         return ufl.sym(ufl.grad(v))
 
     def sig(v, T):
-        return 2.0 * mu * eps(v) + (lmbda * ufl.nabla_div(v) - alpha*(3*lmbda+2*mu)*T) * ufl.Identity(len(v))
+        return 2.0 * mu * eps(v) + (lmbda * ufl.nabla_div(v) - T*1e-20) * ufl.Identity(len(v)) # alpha*(3*lmbda+2*mu)
 
     # --------------- Variational formulation ------------------#
     n = ufl.FacetNormal(domain)
@@ -110,18 +112,23 @@ def runFEM():
     T, dT = ufl.TrialFunction(VT), ufl.TestFunction(VT)
     psi, dpsi = ufl.TrialFunction(Vpsi), ufl.TestFunction(Vpsi)
 
-    Delta_T = fem.Function(VT, name="Temperature increase")
+    # Setting up solution functions
+    uh = fem.Function(Vu)
+    uh.x.array[:] = np.zeros(len(uh.x.array[:]))
     Told = fem.Function(VT)
     Told.x.array[:] = T0.x.array
-    uh = fem.Function(Vu)
-    uh.x.array[:] = np.zeros(len(Told.x.array[:])*2)
+    psih = fem.Function(Vpsi)
+    psih.x.array[:] = np.zeros(len(psih.x.array[:]))
+
     uh.name = "Displacement"
     Told.name = "Temperature"
+    psih.name = "Martensite fraction"
     xdmf = io.XDMFFile(domain.comm, "Resultfiles/Result.xdmf", "w")
     time = 0
     xdmf.write_mesh(domain)
     xdmf.write_function(uh, time)
     xdmf.write_function(Told, time)
+    xdmf.write_function(psih, time)
     for i in range(num_steps):
         time += dt
         # --------------- Thermal problem ------------------#
@@ -132,20 +139,22 @@ def runFEM():
         Told.x.array[:] = Th.x.array # Assigning the function values to the Ti-1 function
 
         # --------------- Mechanical problem ------------------#
-        F = ufl.inner(sig(u, Th), eps(du)) * ufl.dx - ufl.dot(fu * n, du) * ds
+        F = ufl.inner(sig(u, Th), eps(du)) * ufl.dx# - ufl.dot(fu * n, du) * ds
         au, Lu = ufl.lhs(F), ufl.rhs(F)
         problem_u = fem.petsc.LinearProblem(au, Lu, bcs=bcu, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
         uh = problem_u.solve()
 
         # --------------- Phase problem ------------------#
         def Koistinen(Th):
-            return 1 - ufl.exp(-kM * (Ms - Th))
+            return 1 - ufl.exp(-beta * (Ms - Th))
 
-        Fpsi = Koistinen(Th)
-        apsi, Lpsi = ufl.lhs(Fpsi), ufl.rhs(Fpsi)
-        problem_psi = fem.petsc.LinearProblem(apsi, Lpsi, bcs=[], petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
-        psih = problem_psi.solve()
-
+        #Fpsi = Koistinen(Th)
+        #apsi, Lpsi = ufl.lhs(Fpsi), ufl.rhs(Fpsi)
+        #problem_psi = fem.petsc.LinearProblem(apsi, Lpsi, bcs=[], petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
+        #psih = problem_psi.solve()
+        psih_expr = fem.Expression(Koistinen(Th), Vpsi.element.interpolation_points())
+        psih = fem.Function(Vpsi)
+        psih.interpolate(psih_expr)
         # --------------- Postprocessing and saving ------------------#
         von_Mises = post_stress(uh, sig(uh, Th))
         V_von_mises = fem.FunctionSpace(domain, ("DG", 1))
@@ -156,10 +165,12 @@ def runFEM():
         uh.name = "Displacement"
         Th.name = "Temperature"
         stresses.name = "von_Mises"
+        psih.name = "Martensite fraction"
         xdmf.write_function(uh, time)
         xdmf.write_function(Th, time)
+        xdmf.write_function(psih, time)
         xdmf.write_function(stresses, time)
 
     xdmf.close()
 
-runFEM()
+runsolver()

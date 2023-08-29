@@ -2,7 +2,7 @@ from HelpFile import read_input
 def createMesh():
     data = read_input()
     if data['FEM']["elementtype"] == "Spherical":
-        mesh1D(0,data['Geometry']['radius'])
+        mesh1D(0 ,data['Geometry']['radius'])
     elif data['FEM']["elementtype"] == "Axisym2D":
         mesh2D(0, data['Geometry']['radius'])
     else:
@@ -33,14 +33,14 @@ def mesh2D(r1, r2):
     gmsh.initialize()
     gmsh.model.add("QuarterCirc")
     gdim = 2
-    gmsh.model.occ.addDisk(0, 0, 0, r2, 1)
+    gmsh.model.occ.addDisk(0, 0, 0, r2, r2, 1)
     gmsh.model.occ.addRectangle(0, 0, 0, r2, r2, 2)
     gmsh.model.occ.intersect([(gdim, 1)], [(gdim, 2)], 3)
     gmsh.model.occ.synchronize()
 
     gmsh.model.addPhysicalGroup(gdim, [3], 1)
-    gmsh.option.setNumber("Mesh.CharacteristicLengthMin", 0.02)
-    gmsh.option.setNumber("Mesh.CharacteristicLengthMax", 0.03)
+    gmsh.option.setNumber("Mesh.CharacteristicLengthMin", 2*r2/100)
+    gmsh.option.setNumber("Mesh.CharacteristicLengthMax", 3*r2/100)
     gmsh.model.mesh.generate(gdim)
     # ----------------------
     gmsh.write("Resultfiles/Mesh.msh")
