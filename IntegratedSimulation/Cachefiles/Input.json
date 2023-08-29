@@ -1,16 +1,16 @@
 {
   "Geometry": {
     "radius": 1,
-    "innerradius": 0,
+    "innerradius": 0.0,
     "thickness": 0.01
   },
   "material": {
-    "rho": 2700,
-    "cV": 910E-5,
-    "k": 237E-6,
+    "rho": 7800.0,
+    "Cp": 600.0,
+    "k": 44.5,
     "lambda": 1E-12,
     "c_k": 1,
-    "alpha_k": 12E-6,
+    "alpha_k": 12.3E-6,
     "Materialtype": "Elastic",
     "MixtureModel": "RuleofMix",
     "Austenite": {
@@ -29,21 +29,21 @@
   "Thermo": {
     "elementdim": 2,
     "elementtype": "Axisym2D",
-    "element_f": 1,
+    "element_f": 2,
     "nodes": 50,
     "CNtemp": 800,
     "CNenv": "Methane",
     "CNtime": 1,
     "tempertemp": 1,
-    "quenchtime": 1,
-    "quench_steps": 50,
+    "quenchtime": 1000,
+    "quench_steps": 100,
     "quenchmedium": "oil",
     "quenchtemp": 200
   },
   "FEM": {
     "elementdim": 2,
     "elementtype": "Axisym2D",
-    "element_f": 1,
+    "element_f": 2,
     "nodes": 50,
     "nodes_phi": 50,
     "nodes_z": 50,

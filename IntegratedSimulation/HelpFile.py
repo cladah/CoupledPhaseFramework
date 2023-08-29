@@ -16,7 +16,7 @@ def read_input():
 
 
 
-def createcachfile():
+def createinputcach():
     import json
     f = open('Cachefiles/InputCache.json', 'w')
     data = read_input()
@@ -24,7 +24,20 @@ def createcachfile():
     f.close()
 
 def checkinput():
-    pass
+    import json
+    import numpy as np
+    f = open('Cachefiles/Input.json', 'r')
+    indata = json.load(f)
+    f.close()
+    f = open('Cachefiles/InputCache.json', 'r')
+    cachedata = json.load(f)
+    f.close()
+    x = np.zeros(5)
+    if indata["Geometry"] == cachedata["Geometry"]:
+        x[0] = 1
+    if indata["Thermo"] == cachedata["Thermo"]:
+        x[1] = 1
+    return
 
 def savetocache(dataname ,data):
     import h5py
