@@ -103,8 +103,8 @@ def runsolver():
     def eps(v):
         return ufl.sym(ufl.grad(v))
 
-    def sig(v, T):
-        return 2.0 * mu * eps(v) + (lmbda * ufl.nabla_div(v) - T*1e-20) * ufl.Identity(len(v)) # alpha*(3*lmbda+2*mu)
+    def sig(v, DT):
+        return 2.0 * mu * eps(v) + (lmbda * ufl.nabla_div(v) - alpha * DT) * ufl.Identity(len(v)) # alpha*(3*lmbda+2*mu)
 
     # --------------- Variational formulation ------------------#
     n = ufl.FacetNormal(domain)
@@ -139,7 +139,7 @@ def runsolver():
         Told.x.array[:] = Th.x.array # Assigning the function values to the Ti-1 function
 
         # --------------- Mechanical problem ------------------#
-        F = ufl.inner(sig(u, Th), eps(du)) * ufl.dx# - ufl.dot(fu * n, du) * ds
+        F = ufl.inner(sig(u, Th-800.), eps(du)) * ufl.dx# - ufl.dot(fu * n, du) * ds
         au, Lu = ufl.lhs(F), ufl.rhs(F)
         problem_u = fem.petsc.LinearProblem(au, Lu, bcs=bcu, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
         uh = problem_u.solve()
