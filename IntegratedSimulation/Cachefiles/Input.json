@@ -36,7 +36,7 @@
     "CNtime": 1,
     "tempertemp": 1,
     "quenchtime": 1000,
-    "quench_steps": 100,
+    "quench_steps": 10,
     "quenchmedium": "oil",
     "quenchtemp": 293.15
   },
@@ -61,6 +61,14 @@
     "KM": {
       "Ms": 473.15,
       "beta": 0.011
+    },
+    "JMAK_F":{
+      "A":1,
+      "Tau": 1
+    },
+    "JMAK_P":{
+      "A":1,
+      "Tau": 1
     },
     "JMAK_F":{
       "A":1,

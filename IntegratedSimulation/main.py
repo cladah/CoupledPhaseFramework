@@ -17,11 +17,11 @@ def start():
     inputvariable = 'Test'
     if inputvariable == 'Run':
         createMesh()
-        #runcarbonitriding(modelvar)
+        # runcarbonitriding()
         runquenching()
-        # runtempering(modelvar)
-        # runfatiguetest(modelvar)
-        # runplot(modelvar)
+        # runtempering()
+        # runfatiguetest()
+        # runplot()
 
 
 

@@ -7,7 +7,7 @@ from petsc4py.PETSc import ScalarType
 from mpi4py import MPI
 from HelpFile import read_input
 from Postprocessing.Stress import post_stress
-
+from Thermodynamic import Koistinen
 
 
 
@@ -34,7 +34,7 @@ def runsolver():
 
     # Material
     E = fem.Constant(domain, indata["material"]["Austenite"]["E"])
-    nu = fem.Constant(domain, indata["material"]["Austenite"]["E"])
+    nu = fem.Constant(domain, indata["material"]["Austenite"]["nu"])
     rho_g = fem.Constant(domain, ScalarType(indata["material"]["rho"])) * 9.82
     Cp_rho = fem.Constant(domain, indata["material"]["Cp"]) * fem.Constant(domain, ScalarType(indata["material"]["rho"]))
     k = fem.Constant(domain, indata["material"]["k"])
@@ -88,24 +88,15 @@ def runsolver():
     bcu = [xbc, ybc]
     bcT = [bcT]
 
-    # --------------- Loading ------------------#
-
-    outside_f = mesh.locate_entities(domain, 1, outside)
-    marked_values = np.hstack([np.full_like(outside_f, 1)])
-    outside_ft = mesh.meshtags(domain, fdim, outside_f, marked_values)
-
-    fu = fem.Constant(domain, 0.)
-    fT = fem.Constant(domain, 1.)
-    ds = ufl.Measure("ds", domain=domain, subdomain_data=outside_ft)
-    n = ufl.FacetNormal(domain)
-
     # --------------- Strain and stress definitions ------------------#
     def eps(v):
         return ufl.sym(ufl.grad(v))
 
-    def sig(v, DT):
-        return 2.0 * mu * eps(v) + (lmbda * ufl.nabla_div(v) - alpha * DT) * ufl.Identity(len(v)) # alpha*(3*lmbda+2*mu)
+    def sig(v, T, T0):
+        return 2.0 * mu * eps(v) + lmbda * ufl.tr(eps(v)) * ufl.Identity(len(v)) - (3*lmbda+2*mu) * alpha * (T - 800.) * ufl.Identity(len(v)) # alpha*(3*lmbda+2*mu)
 
+    def eps_th(T, T0):
+        return alpha * (T-T0)
     # --------------- Variational formulation ------------------#
     n = ufl.FacetNormal(domain)
     u, du = ufl.TrialFunction(Vu), ufl.TestFunction(Vu)
@@ -117,60 +108,59 @@ def runsolver():
     uh.x.array[:] = np.zeros(len(uh.x.array[:]))
     Told = fem.Function(VT)
     Told.x.array[:] = T0.x.array
-    psih = fem.Function(Vpsi)
-    psih.x.array[:] = np.zeros(len(psih.x.array[:]))
+    psiMh = fem.Function(Vpsi)
+    psiMh.x.array[:] = np.zeros(len(psiMh.x.array[:]))
 
+    # saving 0 point
     uh.name = "Displacement"
     Told.name = "Temperature"
-    psih.name = "Martensite fraction"
+    psiMh.name = "Martensite fraction"
     xdmf = io.XDMFFile(domain.comm, "Resultfiles/Result.xdmf", "w")
     time = 0
     xdmf.write_mesh(domain)
     xdmf.write_function(uh, time)
     xdmf.write_function(Told, time)
-    xdmf.write_function(psih, time)
+    xdmf.write_function(psiMh, time)
+
     for i in range(num_steps):
         time += dt
+
         # --------------- Thermal problem ------------------#
         FT = (Cp_rho/dt * T * dT + k * ufl.dot(ufl.grad(T), ufl.grad(dT)) - Cp_rho/dt * Told * dT)*ufl.dx
+
         aT, LT = ufl.lhs(FT), ufl.rhs(FT)
         problem_T = fem.petsc.LinearProblem(aT, LT, bcs=bcT, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
         Th = problem_T.solve()
-        Told.x.array[:] = Th.x.array # Assigning the function values to the Ti-1 function
+        Told.x.array[:] = Th.x.array  # Assigning the function values to the Ti-1 function
 
         # --------------- Mechanical problem ------------------#
-        F = ufl.inner(sig(u, Th-800.), eps(du)) * ufl.dx# - ufl.dot(fu * n, du) * ds
+        F = ufl.inner(sig(u, Th, T0), eps(du)) * ufl.dx  # - ufl.dot(fu * n, du) * ds, DT is Th-Told
+
         au, Lu = ufl.lhs(F), ufl.rhs(F)
         problem_u = fem.petsc.LinearProblem(au, Lu, bcs=bcu, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
         uh = problem_u.solve()
 
         # --------------- Phase problem ------------------#
-        def Koistinen(Th):
-            return 1 - ufl.exp(-beta * (Ms - Th))
 
-        #Fpsi = Koistinen(Th)
-        #apsi, Lpsi = ufl.lhs(Fpsi), ufl.rhs(Fpsi)
-        #problem_psi = fem.petsc.LinearProblem(apsi, Lpsi, bcs=[], petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
-        #psih = problem_psi.solve()
-        psih_expr = fem.Expression(Koistinen(Th), Vpsi.element.interpolation_points())
-        psih = fem.Function(Vpsi)
-        psih.interpolate(psih_expr)
+        psiMh = fem.Function(Vpsi)
+        psiMh.interpolate(Koistinen(Th, Vpsi, Ms, beta))
+
         # --------------- Postprocessing and saving ------------------#
-        von_Mises = post_stress(uh, sig(uh, Th))
-        V_von_mises = fem.FunctionSpace(domain, ("DG", 1))
-        stress_expr = fem.Expression(von_Mises, V_von_mises.element.interpolation_points())
-        stresses = fem.Function(V_von_mises)
-        stresses.interpolate(stress_expr)
+
+
+
+
         # Write solution to file
         uh.name = "Displacement"
         Th.name = "Temperature"
-        stresses.name = "von_Mises"
-        psih.name = "Martensite fraction"
+        #stresses.name = "von_Mises"
+        psiMh.name = "Martensite fraction"
         xdmf.write_function(uh, time)
         xdmf.write_function(Th, time)
-        xdmf.write_function(psih, time)
-        xdmf.write_function(stresses, time)
+        xdmf.write_function(psiMh, time)
+
+
 
     xdmf.close()
-
 runsolver()
+runpostprocess()
