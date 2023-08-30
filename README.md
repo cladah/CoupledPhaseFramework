@@ -30,8 +30,8 @@ ThermoCalc 2023b
 - CCT calculation (Composition(r))->(CCT(T,t,r,dT))
 - Estimate model parmeters (CCT(T,t,r,dT)) -> (Modelparameters(r))
 - Time dependent solver, t = range(0,tmax,numstep):
-- - Convergance analysis, err < maxerr:
+  - Convergance analysis, err < maxerr:
   - Heat solver (Ti(r), dt) -> (Ti+1(r), eps_th(r))
   - Phase solver (Ti+1(r), dt, psi_ji(r) sigi+1(r)) -> (psi_ji+1(r), eps_psi(r))
-  - - CCT interpolation(Ti+1(r), dt, psi_ji(r) sigi+1(r)) -> (psi_ji+1(r))
+    - CCT interpolation(Ti+1(r), dt, psi_ji(r) sigi+1(r)) -> (psi_ji+1(r))
   - Solid mech solver (eps_th(r), eps_psi(r), Ti+1(r)) -> (sig(r), eps(r), eps_pl(r))
