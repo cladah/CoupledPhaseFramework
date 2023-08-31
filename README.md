@@ -3,12 +3,17 @@ Version 0.1
 
 Simulation of a quenching process implemented with Gmsh, Thermocalc, and FeniCSx/COMSOL.
 
+Datastorage and postprocessing done with h5/XDMF files
+
+Vizualising done with Paraview
+
 **Python 3 modules to run simulation**
 - gmsh - 4.1.1
 - numpy -
 - MPh - 1.2.3
 - tc_python - 2023b
-
+- h5py - 
+- Paraview - 
 
 **Running FeniCSx through Docker**
 
@@ -21,6 +26,14 @@ MPh - 1.2.3
 **Running ThermoCalc through TC-Python**
 
 ThermoCalc 2023b
+
+**Paraview python API**
+
+Paraview 5.1.1
+
+**Datahandling**
+h5py - Postprocessing
+XDMF - Paraview and FeniCSx
 
 # Calculation map
 - Read input
@@ -35,3 +48,7 @@ ThermoCalc 2023b
     - Phase solver (Ti+1(r), dt, psi_ji(r) sigi+1(r)) -> (psi_ji+1(r), eps_psi(r))
       - CCT interpolation(Ti+1(r), dt, psi_ji(r) sigi+1(r)) -> (psi_ji+1(r))
     - Solid mech solver (eps_th(r), eps_psi(r), Ti+1(r)) -> (sig(r), eps(r), eps_pl(r))
+
+# Planned implemenations
+- Crystalplasticity (Neper + Damask)
+- Fully coupling with mixed elements in FeniCSx
