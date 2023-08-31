@@ -1,10 +1,14 @@
 {
   "Geometry": {
-    "radius": 0.1,
+    "radius": 0.01,
     "innerradius": 0.0,
     "thickness": 0.01
   },
   "material": {
+    "Dependentmat": "Fe",
+    "Composition": {
+      "C": 0.3, "Si": 0.2, "Mn": 0.3, "Cr": 1.4, "P": 0.025, "N": 0.025
+    },
     "rho": 7800.0,
     "Cp": 600.0,
     "k": 44.5,
@@ -50,7 +54,7 @@
     "Meshscaling": 0.95
   },
   "Programs": {
-    "Coupling": 0,
+    "Coupling": "Stagg",
     "CNDiffusion": "TC",
     "CCT": "TC",
     "Thermal": "FCSx",

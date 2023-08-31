@@ -2,13 +2,14 @@ from Inputfile import createmodelinput
 from Quenching import runquenching
 #from Carbonitriding import runcarbonitriding
 from Mesh import createMesh
-from HelpFile import read_input
+from HelpFile import *
 
 # Test imports
 from Solvers.ComsolSolver import runComsol
 from Solvers.RunDocker import rundocker
 import json
 import h5py
+from Post_processing import runpostprocess
 
 
 def start():
@@ -26,9 +27,11 @@ def start():
 
 
     elif inputvariable == "Test":
+        #data = readCNfile()
         createMesh()
         #runComsol()
         rundocker()
+        runpostprocess()
         #with h5py.File('C:/Users/ClasD/Documents/GitHub/CoupledPhaseFramework/IntegratedSimulation/Resultfiles/displacement.h5', "r") as f:
         #    disp = f['Function']['Displacement']['0'][...]
         #    print(disp)

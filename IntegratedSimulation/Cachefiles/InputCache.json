@@ -50,7 +50,7 @@
     "Meshscaling": 0.95
   },
   "Programs": {
-    "Coupling": 0,
+    "Coupling": "Stagg",
     "CNDiffusion": "TC",
     "CCT": "TC",
     "Thermal": "FCSx",

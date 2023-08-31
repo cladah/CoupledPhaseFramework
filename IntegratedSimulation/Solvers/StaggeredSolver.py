@@ -8,16 +8,15 @@ from mpi4py import MPI
 from HelpFile import read_input
 from Postprocessing.Stress import post_stress
 from Thermodynamic import Koistinen
-
-
-
+import os
 
 def runsolver():
+    #import h5py
     indata = read_input()
     # --------------- Loading mesh ------------------#
     domain, cell_markers, facet_markers = gmshio.read_from_msh("Resultfiles/Mesh.msh", MPI.COMM_WORLD, 0, gdim=2)
     cord = ufl.SpatialCoordinate(domain)
-    dx = ufl.Measure('dx',domain=domain)
+    dx = ufl.Measure('dx', domain=domain)
     n = ufl.FacetNormal(domain)
 
     # --------------- Creating functionspaces ------------------#
@@ -162,5 +161,6 @@ def runsolver():
 
 
     xdmf.close()
+#os.system("export PYTHONPATH=/usr/local/lib/python3/dist-packages:$PYTHONPATH")
+#os.system('HDF5_MPI="ON" HDF5_DIR="/usr/local" pip3 install --no-cache-dir --no-binary=h5py h5py --upgrade')
 runsolver()
-runpostprocess()

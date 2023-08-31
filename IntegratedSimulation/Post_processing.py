@@ -1,27 +1,32 @@
-from dolfinx import mesh, fem, io
-from mpi4py import MPI
-import ufl
 from HelpFile import read_input
+# import paraview
+import h5py
+import os
 def runpostprocess():
+    directory = os.getcwd() + '/Resultfiles'
+    directory = directory.replace('\\', '/')
     indata = read_input()
 
-    domain, cell_markers, facet_markers = io.gmshio.read_from_msh("Resultfiles/Mesh.msh", MPI.COMM_WORLD, 0, gdim=2)
-    xdmf = io.XDMFFile(domain.comm, "Resultfiles/Result.xdmf", "w")
-
     # Material
-    E = fem.Constant(domain, indata["material"]["Austenite"]["E"])
-    nu = fem.Constant(domain, indata["material"]["Austenite"]["nu"])
-    rho_g = fem.Constant(domain, indata["material"]["rho"]) * 9.82
-    Cp_rho = fem.Constant(domain, indata["material"]["Cp"]) * fem.Constant(domain, indata["material"]["rho"])
-    k = fem.Constant(domain, indata["material"]["k"])
+    E = indata["material"]["Austenite"]["E"]
+    nu = indata["material"]["Austenite"]["nu"]
+    rho_g = indata["material"]["rho"] * 9.82
+    Cp_rho = indata["material"]["Cp"] * indata["material"]["rho"]
+    k = indata["material"]["k"]
     mu = E / 2 / (1 + nu)
     lmbda = E * nu / (1 + nu) / (1 - 2 * nu)
-    alpha = fem.Constant(domain, indata["material"]["alpha_k"])
-
+    alpha = indata["material"]["alpha_k"]
+    print(directory)
+    with h5py.File(directory + '/Result.h5', "r") as f:
+        geometry = f['Mesh']['mesh']['geometry'][...]
+        disp = f['Function']['Displacement']
+        for x in disp.keys():
+            print(disp[x])
 
 
 
     def post_stress(uh, Th, T0, time):
+        import ufl
         def eps(v):
             return ufl.sym(ufl.grad(v))
         def sig(v, T, T0):
@@ -36,8 +41,9 @@ def runpostprocess():
         stresses = fem.Function(V_stress)
         stresses.interpolate(stress_expr)
         stresses.name = "Stress"
-        stresses.sub(0).name = "xx"
-        stresses.sub(1).name = "xy"
+        names = ["xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz"]
+        for i in range(len(names)):
+            stresses.sub(i).name = names[i]
         xdmf.write_function(stresses, time)
         return
     def post_strain(uh):

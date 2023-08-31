@@ -39,6 +39,23 @@ def checkinput():
         x[1] = 1
     return
 
+def readCNfile():
+    import queue
+    with open('Cachefiles/50min_CarbonNitration.txt') as f:
+        lines = f.readlines()
+        header = lines.pop(0).split()
+        material = dict()
+        for i in range(3, len(header), 2):
+            material[header[i].strip("W()")] = []
+        for line in lines:
+            line = line.split()
+            for x in material.keys():
+                material[x].append(float(line.pop(0)))
+    return material
+
+
+
+
 def savetocache(dataname ,data):
     import h5py
     with h5py.File("Cache.hdf5", "r+") as f:
