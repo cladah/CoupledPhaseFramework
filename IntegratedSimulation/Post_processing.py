@@ -1,5 +1,6 @@
 from HelpFile import read_input
-# import paraview
+import pyvista as pv
+
 import h5py
 import os
 def runpostprocess():
@@ -16,15 +17,31 @@ def runpostprocess():
     mu = E / 2 / (1 + nu)
     lmbda = E * nu / (1 + nu) / (1 - 2 * nu)
     alpha = indata["material"]["alpha_k"]
-    print(directory)
+
+    def post_stress(disp, Th, T0, time):
+        import numpy as np
+        def eps(v):
+            return np.gradient(v)
+        def sig(v, T, T0):
+            return 2.0 * mu * eps(v) + lmbda * np.trace(eps(v)) * np.identity(len(v)) - (3 * lmbda + 2 * mu) * alpha * (
+                        T - 800.) * np.identity(len(v))
+        print(np.array(disp).shape)
+        #s = sig(disp, T, T0)
+        #print(sig(disp, Th, T0))
+
+
     with h5py.File(directory + '/Result.h5', "r") as f:
         geometry = f['Mesh']['mesh']['geometry'][...]
         disp = f['Function']['Displacement']
-        for x in disp.keys():
-            print(disp[x])
+        T = f['Function']['Temperature']
+        post_stress(disp['1000'][...], T['1000'][...], T['0'], float('1000'))
+        #for x in disp.keys():
 
 
 
+
+
+    #post_stress(disp['100'][...], T['100'][...], T['0'][...], 100)
     def post_stress(uh, Th, T0, time):
         import ufl
         def eps(v):
@@ -57,3 +74,27 @@ def runpostprocess():
         strains.interpolate(strain_expr)
         strains.name = 'Strain'
         return
+
+def plotPyVista():
+    def load_time(value):
+        """ Load solution at value specified using the slider """
+        reader.set_active_time_value(value)
+        grid = reader.read()[2]
+        p.add_mesh(grid, cmap=cmap)
+
+    #directory = os.getcwd() + '/Resultfiles/Result.xdmf'
+    #directory = directory.replace('\\', '/')
+    reader = pv.get_reader('Resultfiles/Result.xdmf')
+    reader.set_active_time_value(100.0)
+    mesh = reader.read()[2]
+    #mesh.set_active_scalars("Displacement")
+
+    cmap = "plasma"
+
+    p = pv.Plotter()
+    p.add_mesh(mesh, cmap=cmap)
+    p.view_xy()
+    p.add_slider_widget(load_time, [0.0, 1000.0], value=0.0, title="Time",
+                        interaction_event="always", pointa=(0.25, 0.93),
+                        pointb=(0.75, 0.93))
+    p.show()

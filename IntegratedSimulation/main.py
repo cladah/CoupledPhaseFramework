@@ -9,7 +9,7 @@ from Solvers.ComsolSolver import runComsol
 from Solvers.RunDocker import rundocker
 import json
 import h5py
-from Post_processing import runpostprocess
+from Post_processing import *
 
 
 def start():
@@ -28,10 +28,11 @@ def start():
 
     elif inputvariable == "Test":
         #data = readCNfile()
-        createMesh()
+        #createMesh()
         #runComsol()
-        rundocker()
-        runpostprocess()
+        #rundocker()
+        #runpostprocess()
+        plotPyVista()
         #with h5py.File('C:/Users/ClasD/Documents/GitHub/CoupledPhaseFramework/IntegratedSimulation/Resultfiles/displacement.h5', "r") as f:
         #    disp = f['Function']['Displacement']['0'][...]
         #    print(disp)
