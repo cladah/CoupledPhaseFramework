@@ -6,7 +6,8 @@ import numpy as np
 from petsc4py.PETSc import ScalarType
 from mpi4py import MPI
 from HelpFile import read_input
-from Postprocessing.Stress import post_stress
+#from Postprocessing.Stress import post_stress
+from Postprocessing.FeniCSx_post import runpost_FCSx
 from Thermodynamic import Koistinen
 import os
 
@@ -41,6 +42,10 @@ def runsolver():
     lmbda = E * nu / (1 + nu) / (1 - 2 * nu)
     alpha = fem.Constant(domain, indata["material"]["alpha_k"])
     Tstart = indata["Thermo"]["CNtemp"]
+    Et = E / 100.  # tangent modulus
+    EH = E * Et / (E - Et)  # hardening modulus
+
+
 
     # Models
     beta = fem.Constant(domain, indata["Models"]["KM"]["beta"])
@@ -91,8 +96,8 @@ def runsolver():
     def eps(v):
         return ufl.sym(ufl.grad(v))
 
-    def sig(v, T, T0):
-        return 2.0 * mu * eps(v) + lmbda * ufl.tr(eps(v)) * ufl.Identity(len(v)) - (3*lmbda+2*mu) * alpha * (T - 800.) * ufl.Identity(len(v)) # alpha*(3*lmbda+2*mu)
+    def sig(v, T, T0, psi):
+        return 2.0 * mu * eps(v) + lmbda * ufl.tr(eps(v)) * ufl.Identity(len(v)) - (3*lmbda+2*mu) * (alpha * (T - 800.) + psi) * ufl.Identity(len(v)) # alpha*(3*lmbda+2*mu)
 
     def eps_th(T, T0):
         return alpha * (T-T0)
@@ -132,6 +137,11 @@ def runsolver():
         Th = problem_T.solve()
         Told.x.array[:] = Th.x.array  # Assigning the function values to the Ti-1 function
 
+        # --------------- Phase problem ------------------#
+
+        psiMh = fem.Function(Vpsi)
+        psiMh.interpolate(Koistinen(Th, Vpsi, Ms, beta))
+
         # --------------- Mechanical problem ------------------#
         F = ufl.inner(sig(u, Th, T0), eps(du)) * ufl.dx  # - ufl.dot(fu * n, du) * ds, DT is Th-Told
 
@@ -139,14 +149,11 @@ def runsolver():
         problem_u = fem.petsc.LinearProblem(au, Lu, bcs=bcu, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
         uh = problem_u.solve()
 
-        # --------------- Phase problem ------------------#
 
-        psiMh = fem.Function(Vpsi)
-        psiMh.interpolate(Koistinen(Th, Vpsi, Ms, beta))
 
         # --------------- Postprocessing and saving ------------------#
-
-
+        s = runpost_FCSx(uh, Th, T0)
+        s.name = "Stress"
 
 
         # Write solution to file
@@ -157,6 +164,7 @@ def runsolver():
         xdmf.write_function(uh, time)
         xdmf.write_function(Th, time)
         xdmf.write_function(psiMh, time)
+        xdmf.write_function(s, time)
 
 
 
@@ -164,3 +172,4 @@ def runsolver():
 #os.system("export PYTHONPATH=/usr/local/lib/python3/dist-packages:$PYTHONPATH")
 #os.system('HDF5_MPI="ON" HDF5_DIR="/usr/local" pip3 install --no-cache-dir --no-binary=h5py h5py --upgrade')
 runsolver()
+

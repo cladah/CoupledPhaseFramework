@@ -1,6 +1,6 @@
 from HelpFile import read_input
-import pyvista as pv
-
+#import pyvista as pv
+import ufl
 import h5py
 import os
 def runpostprocess():
@@ -21,12 +21,15 @@ def runpostprocess():
     def post_stress(disp, Th, T0, time):
         import numpy as np
         def eps(v):
-            return np.gradient(v)
+            return ufl.sym(ufl.grad(v))
+
         def sig(v, T, T0):
-            return 2.0 * mu * eps(v) + lmbda * np.trace(eps(v)) * np.identity(len(v)) - (3 * lmbda + 2 * mu) * alpha * (
-                        T - 800.) * np.identity(len(v))
-        print(np.array(disp).shape)
+            return 2.0 * mu * eps(v) + lmbda * ufl.tr(eps(v)) * ufl.Identity(len(v)) - (3 * lmbda + 2 * mu) * alpha * (
+                        T - 800.) * ufl.Identity(len(v))  # alpha*(3*lmbda+2*mu)
+        #print(np.array(disp).shape)
         #s = sig(disp, T, T0)
+        disp = ufl.as_tensor(disp)
+        print(disp)
         #print(sig(disp, Th, T0))
 
 
@@ -34,7 +37,8 @@ def runpostprocess():
         geometry = f['Mesh']['mesh']['geometry'][...]
         disp = f['Function']['Displacement']
         T = f['Function']['Temperature']
-        post_stress(disp['1000'][...], T['1000'][...], T['0'], float('1000'))
+
+        post_stress(geometry, disp['1000'][...], T['1000'][...], T['0'], float('1000'))
         #for x in disp.keys():
 
 

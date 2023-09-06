@@ -30,9 +30,9 @@ def start():
         #data = readCNfile()
         #createMesh()
         #runComsol()
-        #rundocker()
+        rundocker()
         #runpostprocess()
-        plotPyVista()
+        #plotPyVista()
         #with h5py.File('C:/Users/ClasD/Documents/GitHub/CoupledPhaseFramework/IntegratedSimulation/Resultfiles/displacement.h5', "r") as f:
         #    disp = f['Function']['Displacement']['0'][...]
         #    print(disp)

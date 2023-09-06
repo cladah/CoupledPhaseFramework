@@ -27,7 +27,6 @@ def rundocker():
         print('Running FeniCSx')
         for log in container.logs(stream=True, stdout=True, stderr=True):
             print(log)
-        #container.stop()
         print('FeniCSx calculation done!')
         print('Removing docker container')
 
