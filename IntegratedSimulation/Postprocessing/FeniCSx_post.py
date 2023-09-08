@@ -25,5 +25,4 @@ def runpost_FCSx(uh,Th,T0):
             return 2.0 * mu * eps(v) + lmbda * ufl.tr(eps(v)) * ufl.Identity(len(v)) - (3 * lmbda + 2 * mu) * alpha * (
                     T - 800.) * ufl.Identity(len(v))  # alpha*(3*lmbda+2*mu)
         return sig(uh, Th, T0)
-    print(post_stress(uh, Th, T0))
     return post_stress(uh, Th, T0)

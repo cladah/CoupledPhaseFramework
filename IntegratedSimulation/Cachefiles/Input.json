@@ -17,6 +17,7 @@
     "alpha_k": 12.3E-6,
     "Materialtype": "Elastic",
     "MixtureModel": "RuleofMix",
+    "alpha_psiM": 0.005,
     "Austenite": {
       "E": 200E9, "nu": 0.3, "alpha": 10E-6, "f": 1, "model": "KM"
     },

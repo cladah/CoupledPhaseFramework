@@ -41,6 +41,7 @@ def runsolver():
     mu = E / 2 / (1 + nu)
     lmbda = E * nu / (1 + nu) / (1 - 2 * nu)
     alpha = fem.Constant(domain, indata["material"]["alpha_k"])
+    alpha_psiM = fem.Constant(domain, indata["material"]["alpha_psiM"])
     Tstart = indata["Thermo"]["CNtemp"]
     Et = E / 100.  # tangent modulus
     EH = E * Et / (E - Et)  # hardening modulus
@@ -97,7 +98,7 @@ def runsolver():
         return ufl.sym(ufl.grad(v))
 
     def sig(v, T, T0, psi):
-        return 2.0 * mu * eps(v) + lmbda * ufl.tr(eps(v)) * ufl.Identity(len(v)) - (3*lmbda+2*mu) * (alpha * (T - 800.) + psi) * ufl.Identity(len(v)) # alpha*(3*lmbda+2*mu)
+        return 2.0 * mu * eps(v) + lmbda * ufl.tr(eps(v)) * ufl.Identity(len(v)) - (3*lmbda+2*mu) * (alpha * (T - 800.) - alpha_psiM*psi) * ufl.Identity(len(v)) # alpha*(3*lmbda+2*mu)
 
     def eps_th(T, T0):
         return alpha * (T-T0)
@@ -143,7 +144,7 @@ def runsolver():
         psiMh.interpolate(Koistinen(Th, Vpsi, Ms, beta))
 
         # --------------- Mechanical problem ------------------#
-        F = ufl.inner(sig(u, Th, T0), eps(du)) * ufl.dx  # - ufl.dot(fu * n, du) * ds, DT is Th-Told
+        F = ufl.inner(sig(u, Th, T0, psiMh), eps(du)) * ufl.dx  # - ufl.dot(fu * n, du) * ds, DT is Th-Told
 
         au, Lu = ufl.lhs(F), ufl.rhs(F)
         problem_u = fem.petsc.LinearProblem(au, Lu, bcs=bcu, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
@@ -152,9 +153,23 @@ def runsolver():
 
 
         # --------------- Postprocessing and saving ------------------#
-        s = runpost_FCSx(uh, Th, T0)
-        s.name = "Stress"
+        stress = sig(uh, Th, T0, psiMh)
+        s = sig(uh, Th, T0, psiMh) - 1. / 3 * ufl.tr(sig(uh, Th, T0, psiMh)) * ufl.Identity(len(uh))
+        von_Mises = ufl.sqrt(3. / 2 * ufl.inner(s, s))
+        #s = sih(uh) - 1. / 3 * ufl.tr(sig(uh)) * ufl.Identity(len(uh))
+        #von_Mises = ufl.sqrt(3. / 2 * ufl.inner(s, s))
 
+        Stress_V = fem.TensorFunctionSpace(domain, ("DG", 1))
+        vM_V = fem.FunctionSpace(domain, ("DG", 1))
+        stress_expr = fem.Expression(stress, Stress_V.element.interpolation_points())
+        vM_expr = fem.Expression(von_Mises, vM_V.element.interpolation_points())
+        stresses = fem.Function(Stress_V)
+        stresses.interpolate(stress_expr)
+        vM_f = fem.Function(vM_V)
+        vM_f.interpolate(vM_expr)
+        #s = runpost_FCSx(uh, Th, T0)
+        #s.name = "Stress"
+        vM_f.name = "von Mises"
 
         # Write solution to file
         uh.name = "Displacement"
@@ -164,7 +179,8 @@ def runsolver():
         xdmf.write_function(uh, time)
         xdmf.write_function(Th, time)
         xdmf.write_function(psiMh, time)
-        xdmf.write_function(s, time)
+        xdmf.write_function(stresses, time)
+        xdmf.write_function(vM_f, time)
 
 
 
