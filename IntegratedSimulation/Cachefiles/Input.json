@@ -4,10 +4,10 @@
     "innerradius": 0.0,
     "thickness": 0.01
   },
-  "material": {
+  "Material": {
     "Dependentmat": "Fe",
     "Composition": {
-      "C": 0.3, "Si": 0.2, "Mn": 0.3, "Cr": 1.4, "P": 0.025, "N": 0.025
+      "C": 0.2, "Si": 0.4, "Mn": 1.2, "Cr": 1.15, "P": 0.025, "N": 0.025, "S": 0.015
     },
     "rho": 7800.0,
     "Cp": 600.0,

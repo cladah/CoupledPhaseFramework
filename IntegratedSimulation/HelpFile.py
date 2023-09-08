@@ -58,20 +58,27 @@ def readCNfile():
 
 def savetocache(dataname ,data):
     import h5py
-    with h5py.File("Cache.hdf5", "r+") as f:
+    try:
+        with h5py.File("ThermoCache.hdf5", "r+") as f:
+            pass
+    except:
+        with h5py.File("ThermoCache.hdf5", "w") as f:
+            pass
+
+    with h5py.File("ThermoCache.hdf5", "r+") as f:
         del f[dataname]
         f.create_dataset(dataname, data=data)
 
 
 def retrievecache(dataname):
     import h5py
-    with h5py.File("Cache.hdf5", "r") as f:
+    with h5py.File("ThermoCache.hdf5", "r") as f:
         data = np.array(f.get(dataname))
     return data
 
 def comparecache(dataname,data):
     import h5py
-    with h5py.File("Cache.hdf5", "r") as f:
+    with h5py.File("ThermoCache.hdf5", "r") as f:
         testdata = np.array(f.get(dataname))
     if testdata == data:
         return True

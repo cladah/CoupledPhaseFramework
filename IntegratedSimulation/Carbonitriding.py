@@ -1,17 +1,19 @@
 from IntegratedSimulation.Solvers.Thermocalc import *
 from HelpFile import *
+import h5py
 
+def runcarbonitriding():
 
-def runcarbonitriding(modelvar):
-    if modelvar["programs"]["Diff"] == "TC":
-        activityenv = TCequalibrium(modelvar,"env")
-        #activitymat = TCequalibrium(modelvar,"steel")
-        CN = TCcarbonitriding(modelvar,activityenv)
-        concentrationC = CN[0]
-        concentrationN = CN[1]
+    data = read_input()
+    if data["Programs"]["CNDiffusion"] == "TC":
+        print('Running carbon-nitriding module with ThermoCalc')
+        activityenv = TCequalibrium("env")
+        CN = TCcarbonitriding(activityenv)
     else:
         raise KeyError('Program not implemented for carbonitriding')
 
-    savetocache("CNcurves/C", np.array(concentrationC))
-    savetocache("CNcurves/N", np.array(concentrationN))
+    with h5py.File("Resultfiles/ThermoCache.hdf5", "w") as f:
+        for element in CN[1].keys():
+            f.create_dataset("CNcurves/"+element, data=np.array(CN[1][element]))
+        f.create_dataset("CNcurves/Position", data=np.array(CN[0]))
 

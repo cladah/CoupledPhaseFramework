@@ -1,25 +1,27 @@
 from Inputfile import createmodelinput
-from Quenching import runquenching
-#from Carbonitriding import runcarbonitriding
+#from Quenching import runquenching
+from Carbonitriding import runcarbonitriding
+from CCT import runCCT
 from Mesh import createMesh
 from HelpFile import *
 
 # Test imports
-from Solvers.ComsolSolver import runComsol
-from Solvers.RunDocker import rundocker
-import json
-import h5py
-from Post_processing import *
+#from Solvers.ComsolSolver import runComsol
+#from Solvers.RunDocker import rundocker
+#import json
+#import h5py
+#from Post_processing import *
 
 
 def start():
     # --------------- Input ------------------#
     #inputvariable = input('What do you want to do? ')
-    inputvariable = 'Test'
+    inputvariable = 'Run'
     if inputvariable == 'Run':
-        createMesh()
-        # runcarbonitriding()
-        runquenching()
+        #createMesh()
+        runcarbonitriding()
+        runCCT()
+        #runquenching()
         # runtempering()
         # runfatiguetest()
         # runplot()
@@ -27,10 +29,11 @@ def start():
 
 
     elif inputvariable == "Test":
+        pass
         #data = readCNfile()
         #createMesh()
         #runComsol()
-        rundocker()
+        #rundocker()
         #runpostprocess()
         #plotPyVista()
         #with h5py.File('C:/Users/ClasD/Documents/GitHub/CoupledPhaseFramework/IntegratedSimulation/Resultfiles/displacement.h5', "r") as f:
