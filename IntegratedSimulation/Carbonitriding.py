@@ -10,7 +10,7 @@ def runcarbonitriding():
         activityenv = TCequalibrium("env")
         CN = TCcarbonitriding(activityenv)
     else:
-        raise KeyError('Program not implemented for carbonitriding')
+        raise KeyError(str(data["Programs"]["CNDiffusion"]) + ' not implemented for carbonitriding')
 
     with h5py.File("Resultfiles/ThermoCache.hdf5", "w") as f:
         for element in CN[1].keys():
