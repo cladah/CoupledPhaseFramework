@@ -1,10 +1,11 @@
 {
   "Geometry": {
-    "radius": 0.01,
+    "radius": 0.1,
     "innerradius": 0.0,
     "thickness": 0.01
   },
   "Material": {
+    "Name": "Grade 159",
     "Dependentmat": "Fe",
     "Composition": {
       "C": 0.2, "N": 0.025
@@ -49,10 +50,10 @@
     "elementdim": 2,
     "elementtype": "Axisym2D",
     "element_f": 2,
-    "nodes": 50,
+    "nodes": 30,
     "nodes_phi": 50,
     "nodes_z": 50,
-    "Meshscaling": 0.95
+    "Meshscaling": 0.92
   },
   "Programs": {
     "Coupling": "Stagg",

@@ -8,31 +8,6 @@ def runpostprocess():
     directory = directory.replace('\\', '/')
     indata = read_input()
 
-    # Material
-    E = indata["material"]["Austenite"]["E"]
-    nu = indata["material"]["Austenite"]["nu"]
-    rho_g = indata["material"]["rho"] * 9.82
-    Cp_rho = indata["material"]["Cp"] * indata["material"]["rho"]
-    k = indata["material"]["k"]
-    mu = E / 2 / (1 + nu)
-    lmbda = E * nu / (1 + nu) / (1 - 2 * nu)
-    alpha = indata["material"]["alpha_k"]
-
-    def post_stress(disp, Th, T0, time):
-        import numpy as np
-        def eps(v):
-            return ufl.sym(ufl.grad(v))
-
-        def sig(v, T, T0):
-            return 2.0 * mu * eps(v) + lmbda * ufl.tr(eps(v)) * ufl.Identity(len(v)) - (3 * lmbda + 2 * mu) * alpha * (
-                        T - 800.) * ufl.Identity(len(v))  # alpha*(3*lmbda+2*mu)
-        #print(np.array(disp).shape)
-        #s = sig(disp, T, T0)
-        disp = ufl.as_tensor(disp)
-        print(disp)
-        #print(sig(disp, Th, T0))
-
-
     with h5py.File(directory + '/Result.h5', "r") as f:
         geometry = f['Mesh']['mesh']['geometry'][...]
         disp = f['Function']['Displacement']
@@ -102,3 +77,40 @@ def plotPyVista():
                         interaction_event="always", pointa=(0.25, 0.93),
                         pointb=(0.75, 0.93))
     p.show()
+def runplot():
+    import h5py
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from HelpFile import read_input
+    print('Plot module')
+    data = read_input()
+
+    directory = os.getcwd() + '/Resultfiles'
+    directory = directory.replace('\\', '/')
+    with h5py.File(directory + '/Result.h5', "r") as f:
+        geometry = f['Mesh']['mesh']['geometry'][...]
+        disp = f['Function']['Displacement']
+        T = f['Function']['Temperature']['100'][...]
+        T = f['Function']['Martensite fraction']['100'][...]
+
+
+        x = geometry[:, 0] == 0
+        Y = list()
+        X = list()
+        for i in range(len(geometry)):
+            if x[i]:
+                Y.append(T[i])
+                X.append(geometry[i, 1])
+
+
+    resultzip = sorted(zip(X, Y), key=lambda pair: pair[0])
+    x = [x for x, y in resultzip]
+    y = [y for x, y in resultzip]
+
+    plt.plot(x, y)
+    plt.ylim([0, 1])
+    plt.xlim([x[0], x[-1]])
+    plt.legend(['Martensite fraction'], loc='upper left')
+    plt.show()
+
+    #print(T[geometry[:,0]==0])

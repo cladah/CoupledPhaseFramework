@@ -1,8 +1,9 @@
 from Inputfile import createmodelinput
-#from Quenching import runquenching
-from Carbonitriding import runcarbonitriding
-from CCT import runCCT
+from Quenching import runquenching
+#from Carbonitriding import runcarbonitriding
+#from CCT import runCCT
 from Mesh import createMesh
+from Post_processing import runplot
 from HelpFile import *
 
 # Test imports
@@ -19,13 +20,13 @@ def start():
     inputvariable = 'Run'
     if inputvariable == 'Run':
         #createMesh()
-        runcarbonitriding()
-        runCCT()
+        #runcarbonitriding()
+        #runCCT()
         #runquenching()
         # runtempering()
         # runfatiguetest()
-        # runplot()
-
+        runplot()
+        print('Simulation done')
 
 
     elif inputvariable == "Test":

@@ -33,15 +33,15 @@ def runsolver():
     dt = tstop / num_steps  # time step size
 
     # Material
-    E = fem.Constant(domain, indata["material"]["Austenite"]["E"])
-    nu = fem.Constant(domain, indata["material"]["Austenite"]["nu"])
-    rho_g = fem.Constant(domain, ScalarType(indata["material"]["rho"])) * 9.82
-    Cp_rho = fem.Constant(domain, indata["material"]["Cp"]) * fem.Constant(domain, ScalarType(indata["material"]["rho"]))
-    k = fem.Constant(domain, indata["material"]["k"])
+    E = fem.Constant(domain, indata["Material"]["Austenite"]["E"])
+    nu = fem.Constant(domain, indata["Material"]["Austenite"]["nu"])
+    rho_g = fem.Constant(domain, ScalarType(indata["Material"]["rho"])) * 9.82
+    Cp_rho = fem.Constant(domain, indata["Material"]["Cp"]) * fem.Constant(domain, ScalarType(indata["Material"]["rho"]))
+    k = fem.Constant(domain, indata["Material"]["k"])
     mu = E / 2 / (1 + nu)
     lmbda = E * nu / (1 + nu) / (1 - 2 * nu)
-    alpha = fem.Constant(domain, indata["material"]["alpha_k"])
-    alpha_psiM = fem.Constant(domain, indata["material"]["alpha_psiM"])
+    alpha = fem.Constant(domain, indata["Material"]["alpha_k"])
+    alpha_psiM = fem.Constant(domain, indata["Material"]["alpha_psiM"])
     Tstart = indata["Thermo"]["CNtemp"]
     Et = E / 100.  # tangent modulus
     EH = E * Et / (E - Et)  # hardening modulus
@@ -98,10 +98,12 @@ def runsolver():
         return ufl.sym(ufl.grad(v))
 
     def sig(v, T, T0, psi):
-        return 2.0 * mu * eps(v) + lmbda * ufl.tr(eps(v)) * ufl.Identity(len(v)) - (3*lmbda+2*mu) * (alpha * (T - 800.) - alpha_psiM*psi) * ufl.Identity(len(v)) # alpha*(3*lmbda+2*mu)
+        return 2.0 * mu * eps(v) + lmbda * ufl.tr(eps(v)) * ufl.Identity(len(v)) - (3*lmbda+2*mu) * (alpha * (T - 800.) - eps_psi(psi)) * ufl.Identity(len(v))
 
     def eps_th(T, T0):
         return alpha * (T-T0)
+    def eps_psi(psi):
+        return alpha_psiM*psi
     # --------------- Variational formulation ------------------#
     n = ufl.FacetNormal(domain)
     u, du = ufl.TrialFunction(Vu), ufl.TestFunction(Vu)
@@ -142,6 +144,7 @@ def runsolver():
 
         psiMh = fem.Function(Vpsi)
         psiMh.interpolate(Koistinen(Th, Vpsi, Ms, beta))
+        # Here to add interpolation of CCT diagrams
 
         # --------------- Mechanical problem ------------------#
         F = ufl.inner(sig(u, Th, T0, psiMh), eps(du)) * ufl.dx  # - ufl.dot(fu * n, du) * ds, DT is Th-Told
