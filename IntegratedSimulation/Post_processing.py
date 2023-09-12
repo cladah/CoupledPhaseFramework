@@ -90,27 +90,48 @@ def runplot():
     with h5py.File(directory + '/Result.h5', "r") as f:
         geometry = f['Mesh']['mesh']['geometry'][...]
         disp = f['Function']['Displacement']
-        T = f['Function']['Temperature']['100'][...]
-        T = f['Function']['Martensite fraction']['100'][...]
-
-
+        timesteps = list(f['Function']['Temperature'].keys())
+        #timesteps = sorted([float(i) for i in timestepstemp])
         x = geometry[:, 0] == 0
-        Y = list()
         X = list()
         for i in range(len(geometry)):
             if x[i]:
-                Y.append(T[i])
                 X.append(geometry[i, 1])
+        YT = list()
+        YfM = list()
+        for time in timesteps:
+            T = f['Function']['Temperature'][time][...]
+            fM = f['Function']['Martensite fraction'][time][...]
 
+            # Picking out values for the nodes on the x-axis
+            tempT = list()
+            tempfM = list()
+            for i in range(len(geometry)):
+                if x[i]:
+                    tempT.append(T[i])
+                    tempfM.append(fM[i])
+            # Sorting values
+            resultzip = sorted(zip(X, tempT, tempfM), key=lambda pair: pair[0])
+            cord = [cord for cord, t, fm in resultzip]
+            t = [t for cord, t, fm in resultzip]
+            fm = [fm for cord, t, fm in resultzip]
+            YT.append(t)
+            YfM.append(fm)
 
-    resultzip = sorted(zip(X, Y), key=lambda pair: pair[0])
-    x = [x for x, y in resultzip]
-    y = [y for x, y in resultzip]
-
-    plt.plot(x, y)
+    # Plotting
+    #fig, ax1, ax2 = plt.subplots(nrows=1, ncols=2)
+    #print(timesteps)
+    for i in range(len(timesteps)):
+        plt.plot(cord, YfM[i])
     plt.ylim([0, 1])
-    plt.xlim([x[0], x[-1]])
-    plt.legend(['Martensite fraction'], loc='upper left')
+    plt.xlim([cord[0], cord[-1]])
+    plt.legend(timesteps, loc='upper left')
+    plt.title('Martensite fraction')
     plt.show()
-
-    #print(T[geometry[:,0]==0])
+    for i in range(len(timesteps)):
+        plt.plot(cord, YT[i])
+    plt.ylim([0, 1.1*YT[0][0]])
+    plt.xlim([cord[0], cord[-1]])
+    plt.legend(timesteps, loc='upper left')
+    plt.title('Temperature')
+    plt.show()

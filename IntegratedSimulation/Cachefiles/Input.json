@@ -2,7 +2,9 @@
   "Geometry": {
     "radius": 0.1,
     "innerradius": 0.0,
-    "thickness": 0.01
+    "thickness": 0.01,
+    "nodes": 30,
+    "meshscaling": 0.92
   },
   "Material": {
     "Name": "Grade 159",
@@ -33,10 +35,6 @@
     }
   },
   "Thermo": {
-    "elementdim": 2,
-    "elementtype": "Axisym2D",
-    "element_f": 2,
-    "nodes": 50,
     "CNtemp": 1073.15,
     "CNenv": "Methane",
     "CNtime": 1,
@@ -49,11 +47,7 @@
   "FEM": {
     "elementdim": 2,
     "elementtype": "Axisym2D",
-    "element_f": 2,
-    "nodes": 30,
-    "nodes_phi": 50,
-    "nodes_z": 50,
-    "Meshscaling": 0.92
+    "element_f": 2
   },
   "Programs": {
     "Coupling": "Stagg",

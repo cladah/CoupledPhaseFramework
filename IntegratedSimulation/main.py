@@ -20,13 +20,15 @@ def start():
     inputvariable = 'Run'
     if inputvariable == 'Run':
         #createMesh()
-        #runcarbonitriding()
-        #runCCT()
-        #runquenching()
+        # runcarbonitriding()
+        # runCCT()
+        # runquenching()
         # runtempering()
         # runfatiguetest()
         runplot()
         print('Simulation done')
+        print('Caching data')
+        createinputcache()
 
 
     elif inputvariable == "Test":

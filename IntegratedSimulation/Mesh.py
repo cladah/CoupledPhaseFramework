@@ -1,6 +1,9 @@
-from HelpFile import read_input
+from HelpFile import read_input, checkinput
 import numpy as np
 def createMesh():
+    if checkinput('Mesh'):
+        print('Using precalculated mesh')
+        return
     print('Mesh module')
     data = read_input()
     if data['FEM']["elementtype"] == "Spherical":
@@ -15,9 +18,9 @@ def createMesh():
 def mesh1D():
     import gmsh
     data = read_input()
-    lc = data['Geometry']['radius'] * data['FEM']['Meshscaling'] ** (data['FEM']['nodes'] - 1) / np.sum(
+    lc = data['Geometry']['radius'] * data['FEM']['Meshscaling'] ** (data['Geometry']['nodes'] - 1) / np.sum(
         data['FEM']['Meshscaling'] **
-        np.linspace(0, data['FEM']['nodes'] - 1, data['FEM']['nodes']))
+        np.linspace(0, data['Geometry']['nodes'] - 1, data['Geometry']['nodes']))
     gmsh.initialize()
     model = gmsh.model()
 
@@ -27,7 +30,7 @@ def mesh1D():
     factory.addLine(1, 2, 1)
     factory.synchronize()
     gmsh.model.addPhysicalGroup(1, [1], 1, 'Line')
-    gmsh.model.mesh.set_transfinite_curve(1, data['FEM']['nodes'], 'Progression', data['FEM']['Meshscaling'])
+    gmsh.model.mesh.set_transfinite_curve(1, data['Geometry']['nodes'], 'Progression', data['Geometry']['meshscaling'])
     gmsh.model.mesh.generate(1)
 
     gmsh.write("Resultfiles/Mesh.msh")
@@ -37,8 +40,8 @@ def mesh1D():
 def mesh2D():
     import gmsh
     data = read_input()
-    lc = data['Geometry']['radius'] * data['FEM']['Meshscaling'] ** (data['FEM']['nodes'] - 1) / np.sum(data['FEM']['Meshscaling'] **
-        np.linspace(0, data['FEM']['nodes'] - 1, data['FEM']['nodes']))
+    lc = data['Geometry']['radius'] * data['Geometry']['meshscaling'] ** (data['Geometry']['nodes'] - 1) / np.sum(data['Geometry']['meshscaling'] **
+        np.linspace(0, data['Geometry']['nodes'] - 1, data['Geometry']['nodes']))
 
     gmsh.initialize()
     gmsh.clear()
@@ -59,8 +62,8 @@ def mesh2D():
     gmsh.model.addPhysicalGroup(1, [2], 2, 'Side')
     gmsh.model.addPhysicalGroup(1, [3], 3, 'Circumference')
     gmsh.model.addPhysicalGroup(gdim, [5], 4, 'Sphere')
-    gmsh.model.mesh.set_transfinite_curve(1, data['FEM']['nodes'], 'Progression', data['FEM']['Meshscaling'])
-    gmsh.model.mesh.set_transfinite_curve(2, data['FEM']['nodes'], 'Progression', data['FEM']['Meshscaling'])
+    gmsh.model.mesh.set_transfinite_curve(1, data['Geometry']['nodes'], 'Progression', data['FEM']['meshscaling'])
+    gmsh.model.mesh.set_transfinite_curve(2, data['Geometry']['nodes'], 'Progression', data['FEM']['meshscaling'])
     #gmsh.option.setNumber("Mesh.CharacteristicLengthMin", 2*data['Geometry']['radius']/100)
     #gmsh.option.setNumber("Mesh.CharacteristicLengthMax", 3*data['Geometry']['radius']/100)
     gmsh.model.mesh.generate(gdim)

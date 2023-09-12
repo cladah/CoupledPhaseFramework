@@ -16,14 +16,14 @@ def read_input():
 
 
 
-def createinputcach():
+def createinputcache():
     import json
     f = open('Cachefiles/InputCache.json', 'w')
     data = read_input()
-    json.dump(data)
+    json.dump(data, f, indent=2)
     f.close()
 
-def checkinput():
+def checkinput(model):
     import json
     import numpy as np
     f = open('Cachefiles/Input.json', 'r')
@@ -32,12 +32,15 @@ def checkinput():
     f = open('Cachefiles/InputCache.json', 'r')
     cachedata = json.load(f)
     f.close()
-    x = np.zeros(5)
-    if indata["Geometry"] == cachedata["Geometry"]:
-        x[0] = 1
-    if indata["Thermo"] == cachedata["Thermo"]:
-        x[1] = 1
-    return
+    if model == 'Mesh':
+        for x in ['Geometry']:
+            if indata[x] != cachedata[x]:
+                return False
+    elif model == 'Quenching':
+        for x in ['Geometry', 'Material', 'Thermo', 'FEM', 'Programs']:
+            if indata[x] != cachedata[x]:
+                return False
+    return False
 
 def readCNfile():
     import queue
