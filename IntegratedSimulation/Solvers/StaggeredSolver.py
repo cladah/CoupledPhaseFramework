@@ -123,7 +123,7 @@ def runsolver():
     Told.name = "Temperature"
     psiMh.name = "Martensite fraction"
     xdmf = io.XDMFFile(domain.comm, "Resultfiles/Result.xdmf", "w")
-    time = 0
+    time = 0.
     xdmf.write_mesh(domain)
     xdmf.write_function(uh, time)
     xdmf.write_function(Told, time)
@@ -147,7 +147,7 @@ def runsolver():
         # Here to add interpolation of CCT diagrams
 
         # --------------- Mechanical problem ------------------#
-        F = ufl.inner(sig(u, Th, T0, psiMh), eps(du)) * ufl.dx  # - ufl.dot(fu * n, du) * ds, DT is Th-Told
+        F = ufl.inner(sig(u, Th, T0, psiMh), eps(du)) * ufl.dx * 2 * np.pi * r  # - ufl.dot(fu * n, du) * ds, DT is Th-Told
 
         au, Lu = ufl.lhs(F), ufl.rhs(F)
         problem_u = fem.petsc.LinearProblem(au, Lu, bcs=bcu, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})

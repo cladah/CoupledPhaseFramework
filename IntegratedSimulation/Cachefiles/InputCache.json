@@ -27,14 +27,14 @@
       "nu": 0.3,
       "alpha": 1e-05,
       "f": 1,
-      "model": "KM"
+      "model": "-"
     },
     "Martensite": {
       "E": 200000000000.0,
       "nu": 0.3,
       "alpha": 1e-05,
       "f": 0,
-      "model": "JMAK"
+      "model": "KM"
     },
     "Perlite": {
       "E": 200000000000.0,

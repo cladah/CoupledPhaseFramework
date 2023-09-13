@@ -1,7 +1,7 @@
 from Inputfile import createmodelinput
 from Quenching import runquenching
 #from Carbonitriding import runcarbonitriding
-#from CCT import runCCT
+from CCT import runCCT
 from Mesh import createMesh
 from Post_processing import runplot
 from HelpFile import *
@@ -21,11 +21,11 @@ def start():
     if inputvariable == 'Run':
         #createMesh()
         # runcarbonitriding()
-        # runCCT()
+        runCCT()
         # runquenching()
         # runtempering()
         # runfatiguetest()
-        runplot()
+        #runplot()
         print('Simulation done')
         print('Caching data')
         createinputcache()

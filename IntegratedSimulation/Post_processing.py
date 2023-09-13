@@ -90,8 +90,9 @@ def runplot():
     with h5py.File(directory + '/Result.h5', "r") as f:
         geometry = f['Mesh']['mesh']['geometry'][...]
         disp = f['Function']['Displacement']
-        timesteps = list(f['Function']['Temperature'].keys())
-        #timesteps = sorted([float(i) for i in timestepstemp])
+        timestepstemp = list(f['Function']['Temperature'].keys())
+        timesteps = sorted([float(i) for i in timestepstemp])
+        timesteps = [str(int(i)) for i in timesteps]
         x = geometry[:, 0] == 0
         X = list()
         for i in range(len(geometry)):
@@ -120,7 +121,7 @@ def runplot():
 
     # Plotting
     #fig, ax1, ax2 = plt.subplots(nrows=1, ncols=2)
-    #print(timesteps)
+
     for i in range(len(timesteps)):
         plt.plot(cord, YfM[i])
     plt.ylim([0, 1])

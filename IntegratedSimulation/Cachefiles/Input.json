@@ -22,10 +22,10 @@
     "MixtureModel": "RuleofMix",
     "alpha_psiM": 0.005,
     "Austenite": {
-      "E": 200E9, "nu": 0.3, "alpha": 10E-6, "f": 1, "model": "KM"
+      "E": 200E9, "nu": 0.3, "alpha": 10E-6, "f": 1, "model": "-"
     },
     "Martensite": {
-    "E": 200E9, "nu": 0.3, "alpha": 10E-6, "f": 0, "model": "JMAK"
+    "E": 200E9, "nu": 0.3, "alpha": 10E-6, "f": 0, "model": "KM"
     },
     "Perlite": {
     "E": 200E9, "nu": 0.3, "alpha": 10E-6, "f": 0, "model": "JMAK"
