@@ -24,6 +24,7 @@ def modelfitting(model, x, y):
 
 
 def runCCT():
+    from Solvers.Thermocalc import calculateCCT
     import h5py
     import matplotlib.pyplot as plt
     import numpy as np
@@ -36,7 +37,10 @@ def runCCT():
         for element in data['Material']['Composition'].keys():
             #plt.plot(x, 100 * np.array(f.get("CNcurves/"+element)))
             a[element] = 100 * np.array(f.get("CNcurves/" + element)) # Composition curves at all points along x
-
+    composition = data['Material']['Composition']
+    composition['C'] = a['C'][-1]
+    composition['N'] = a['N'][-1]
+    calculateCCT(composition)
     #Ccurve = np.array(f.get("CNcurves/C"))
     #Ncurve = np.array(f.get("CNcurves/N"))
     #plt.plot(Ccurve)
@@ -50,9 +54,9 @@ def runCCT():
     T_new = np.linspace(700,1000,50)
     t_new = Perlite(T_new).T
 
-    #plt.plot(x, y)
-    #plt.plot(t_new,T_new)
-    #plt.show()
+    plt.plot(x, y)
+    plt.plot(t_new, T_new)
+    plt.show()
     #Martensite = modelfitting(data['Material']['Martensite']['model'], [1, 1], 2)
     #Perlite = modelfitting(data['Material']['Perlite']['model'], [1, 1], [1, 1])
     #Bainite = modelfitting(data['Material']['Bainite']['model'], [1, 1], [1, 1])

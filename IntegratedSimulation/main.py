@@ -1,6 +1,6 @@
 from Inputfile import createmodelinput
-from Quenching import runquenching
-#from Carbonitriding import runcarbonitriding
+#from Quenching import runquenching
+from Carbonitriding import runcarbonitriding
 from CCT import runCCT
 from Mesh import createMesh
 from Post_processing import runplot
@@ -19,7 +19,7 @@ def start():
     #inputvariable = input('What do you want to do? ')
     inputvariable = 'Run'
     if inputvariable == 'Run':
-        #createMesh()
+        # createMesh()
         # runcarbonitriding()
         runCCT()
         # runquenching()
