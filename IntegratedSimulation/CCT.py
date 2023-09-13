@@ -1,3 +1,4 @@
+from IntegratedSimulation.Solvers.Thermocalc import *
 def modelfitting(model, x, y):
     import scipy
     import numpy as np

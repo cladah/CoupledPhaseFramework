@@ -117,3 +117,40 @@ def setmaterial(data,type):
         raise KeyError("Wrong carbonitiding environment, use Argon, Methane, or Propane")
 
     return env_dep, env_comp
+
+def calculateCCT():
+    data = read_input()
+    if type == "env":
+        database = "SSUB6"
+        material = setmaterial(data, type)
+        dependentmat = material[0]
+        composition = material[1]
+        phases = ["GAS", "C_S"]
+        dormantphases = ["C_S"]
+        referencestates = {"C": "C_S", "N": "GAS"}
+    with TCPython() as start:
+        # create and configure a single equilibrium calculation
+        calculation = (
+            start
+            .select_database_and_elements(database, [dependentmat] + list(composition))
+            .get_system()
+            .with_property_model_calculation('TTT Diagram')
+            .set_condition(ThermodynamicQuantity.temperature(), data['Thermo']["CNtemp"])
+            .set_phase_to_suspended('*')
+            #.disable_global_minimization()
+        )
+
+        for element in composition:
+            calculation.set_condition(ThermodynamicQuantity.mass_fraction_of_a_component(element), composition[element]/100)
+        for phase in phases:
+            calculation.set_phase_to_entered(phase)
+        for phase in dormantphases:
+            calculation.set_phase_to_dormant(phase)
+        for element in referencestates:
+            calculation.with_reference_state(element,referencestates[element])
+        calc_result = (calculation
+                       .calculate()  # Aktiverar beräkningen
+                       )
+        activityC = calc_result.get_value_of(ThermodynamicQuantity.activity_of_component('C'))
+        activityN = calc_result.get_value_of(ThermodynamicQuantity.activity_of_component('N'))
+        return activityC, activityN

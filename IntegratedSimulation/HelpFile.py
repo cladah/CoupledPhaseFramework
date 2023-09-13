@@ -40,6 +40,10 @@ def checkinput(model):
         for x in ['Geometry', 'Material', 'Thermo', 'FEM', 'Programs']:
             if indata[x] != cachedata[x]:
                 return False
+    elif model == 'Carbonitriding':
+        for x in ['Geometry', 'Material', 'Thermo', 'Programs']:
+            if indata[x] != cachedata[x]:
+                return False
     return False
 
 def readCNfile():
