@@ -3,6 +3,9 @@ from HelpFile import *
 import h5py
 
 def runcarbonitriding():
+    if checkinput('Carbonitriding'):
+        print('Using old carbnitriding simulation')
+        return
     print('Carbonitriding module')
     data = read_input()
     if data["Programs"]["CNDiffusion"] == "TC":
