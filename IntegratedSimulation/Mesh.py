@@ -1,4 +1,4 @@
-from HelpFile import read_input, checkinput
+from HelpFile import read_input, checkinput, adjustinputcache
 import numpy as np
 def createMesh():
     if checkinput('Mesh'):
@@ -14,7 +14,7 @@ def createMesh():
         mesh2D()
     else:
         raise KeyError('Meshtype implemented in mesh module')
-
+    adjustinputcache('Mesh')
 def mesh1D():
     import gmsh
     data = read_input()
@@ -62,8 +62,8 @@ def mesh2D():
     gmsh.model.addPhysicalGroup(1, [2], 2, 'Side')
     gmsh.model.addPhysicalGroup(1, [3], 3, 'Circumference')
     gmsh.model.addPhysicalGroup(gdim, [5], 4, 'Sphere')
-    gmsh.model.mesh.set_transfinite_curve(1, data['Geometry']['nodes'], 'Progression', data['FEM']['meshscaling'])
-    gmsh.model.mesh.set_transfinite_curve(2, data['Geometry']['nodes'], 'Progression', data['FEM']['meshscaling'])
+    gmsh.model.mesh.set_transfinite_curve(1, data['Geometry']['nodes'], 'Progression', data['Geometry']['meshscaling'])
+    gmsh.model.mesh.set_transfinite_curve(2, data['Geometry']['nodes'], 'Progression', data['Geometry']['meshscaling'])
     #gmsh.option.setNumber("Mesh.CharacteristicLengthMin", 2*data['Geometry']['radius']/100)
     #gmsh.option.setNumber("Mesh.CharacteristicLengthMax", 3*data['Geometry']['radius']/100)
     gmsh.model.mesh.generate(gdim)

@@ -23,6 +23,23 @@ def createinputcache():
     json.dump(data, f, indent=2)
     f.close()
 
+def adjustinputcache(model):
+    import json
+    f = open('Cachefiles/Input.json', 'r')
+    indata = json.load(f)
+    f.close()
+    f = open('Cachefiles/InputCache.json', 'w')
+    data = read_input()
+    if model == 'Mesh':
+        data['Geometry'] = indata['Geometry']
+    elif model == 'Quenching':
+        for x in ['Geometry', 'Material', 'Thermo', 'FEM', 'Programs']:
+            data[x] = indata[x]
+    else:
+        raise KeyError('Adjust input cache not implemented')
+    json.dump(data, f, indent=2)
+    f.close()
+
 def checkinput(model):
     import json
     import numpy as np
@@ -40,7 +57,7 @@ def checkinput(model):
         for x in ['Geometry', 'Material', 'Thermo', 'FEM', 'Programs']:
             if indata[x] != cachedata[x]:
                 return False
-    return False
+    return True
 
 def readCNfile():
     import queue

@@ -1,7 +1,7 @@
 def modelfitting(model, x, y):
     import scipy
     import numpy as np
-    from scipy.interpolate import BSpline, make_interp_spline
+    from scipy.interpolate import BSpline, make_interp_spline, interpn
     if model == "KM":
         def objective(x, Ms, beta):
             return 1-np.exp(-beta*(Ms-x))

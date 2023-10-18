@@ -19,16 +19,16 @@ def start():
     #inputvariable = input('What do you want to do? ')
     inputvariable = 'Run'
     if inputvariable == 'Run':
-        #createMesh()
+        createMesh()
         # runcarbonitriding()
-        runCCT()
+        # runCCT()
         # runquenching()
         # runtempering()
         # runfatiguetest()
         #runplot()
         print('Simulation done')
         print('Caching data')
-        createinputcache()
+        #createinputcache()
 
 
     elif inputvariable == "Test":

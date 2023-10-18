@@ -1,6 +1,6 @@
 from Solvers.RunDocker import rundocker
 from Solvers.ComsolSolver import runComsol
-from HelpFile import read_input, checkinput
+from HelpFile import read_input, checkinput, adjustinputcache
 
 def runquenching():
     if checkinput('Quenching'):
@@ -14,6 +14,6 @@ def runquenching():
     elif data['Programs']['FEM'] == 'Comsol':
         print('Using COMSOL for FEM calculation')
         runComsol()
-        pass
     else:
         raise KeyError('Program not implemented')
+    adjustinputcache('Mesh')
