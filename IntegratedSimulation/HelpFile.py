@@ -49,6 +49,9 @@ def checkinput(model):
     f = open('Cachefiles/InputCache.json', 'r')
     cachedata = json.load(f)
     f.close()
+    # Check rerun criteria
+    if indata['Rerun'][model] == 1:
+        return False
     if model == 'Mesh':
         for x in ['Geometry']:
             if indata[x] != cachedata[x]:
@@ -58,6 +61,8 @@ def checkinput(model):
             if indata[x] != cachedata[x]:
                 return False
     return True
+
+
 
 def readCNfile():
     import queue
@@ -104,6 +109,7 @@ def comparecache(dataname,data):
         return True
     else:
         return False
+
 
 def testchacheinfo(modelvar):
     fileinfo = retrievecache("Info")

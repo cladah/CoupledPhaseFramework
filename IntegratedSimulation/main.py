@@ -1,7 +1,8 @@
 from Inputfile import createmodelinput
 from Quenching import runquenching
 #from Carbonitriding import runcarbonitriding
-from CCT import runCCT
+#from CCT import runCCT
+from Solvers.TTTmodelfit import TTTfit
 from Mesh import createMesh
 from Post_processing import runplot
 from HelpFile import *
@@ -22,6 +23,7 @@ def start():
         createMesh()
         # runcarbonitriding()
         # runCCT()
+        TTTfit()
         # runquenching()
         # runtempering()
         # runfatiguetest()

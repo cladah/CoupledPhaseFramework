@@ -1,4 +1,12 @@
 {
+  "Rerun": {
+    "Mesh": 1,
+    "Carbonitiding": 0,
+    "CCT": 0,
+    "Quench": 0,
+    "Temp": 0,
+    "Fatigue": 0
+  },
   "Geometry": {
     "radius": 0.01,
     "innerradius": 0.0,
@@ -149,10 +157,10 @@
       },
       "sigy(T)": {
         "sigy": [
-          1600.0,
-          1500.0,
-          1400.0,
-          100.0
+          1500,
+          1400,
+          1200,
+          100
         ],
         "T": [
           0.0,
