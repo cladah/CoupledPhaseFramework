@@ -3,6 +3,7 @@
     "Mesh": 0,
     "Carbonitiding": 0,
     "CCT": 0,
+    "ThermoFit": 1,
     "Quench": 0,
     "Temp": 0,
     "Fatigue": 0

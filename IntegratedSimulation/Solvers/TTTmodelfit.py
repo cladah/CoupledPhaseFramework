@@ -9,7 +9,7 @@ def TTTfit():
     # 'Total ferrite+cementite start (2%)', 'Austenite transformed 2%', 'Austenite transformed 50%',
     # 'Austenite transformed 98%', 'Martensite start', 'Martensite 50%', 'Martensite 98%', 'Temperature [K]'
 
-    with open("Resultfiles/TTT_Si0,4_Mn1,2_P0,025_S0,014_Cr1,15_C0,2_N0,01.txt") as f:
+    with open("Resultfiles/TTT_Si0,4_Mn1,2_P0,025_S0,014_Cr1,15_C0,2_N0,01_all.txt") as f:
         freader = csv.reader(f, delimiter='\t')
         header = freader.__next__()
         numlines = len(header)
@@ -35,14 +35,37 @@ def TTTfit():
     plt.xscale("log")
     legend = list()
     for x in header:
-        legend.append(x)
-        if x == 'Martensite start':
+        if x == 'Temperature [K]':
             break
+        legend.append(x)
         xpoints = data[x][0]
         ypoints = data[x][1]
-        plt.plot(xpoints, ypoints)
-    plt.legend(legend)
-    plt.show()
-    JMAKfit(data['Ferrite start (2%)'], data['Austenite transformed 50%'], data['Austenite transformed 50%'])
+        #plt.plot(xpoints, ypoints)
+    #plt.legend(legend)
+    #plt.show()
+    #JMAKfit(data['Start time (2% pearlite)'], data['Half time (50% pearlite)'], data['Finish time (98% pearlite)'])
 def JMAKfit(data1,data2,data3):
+    import numpy as np
+    tau = list()
+    n = list()
+    Tlist = list()
+    tmpdata = list()
+    for x in data1[1]:
+       if np.where(data3[1]==x)[0].size!=0:
+
+           i = np.where(data3[1] == x)[0][0]
+           print(data3[0][i])
+           print(data1[0][i])
+           print(np.log(0.98-0.02))
+           tmpn = np.log(np.log(0.98-0.02)-data1[1][i]/data3[1][i])
+           print(tmpn)
+           print(x)
+           tmptau = - x/np.log(0.02)^(1/tmpn)
+           n.append(tmpn)
+           tau.append(tmptau)
+           Tlist.append(x)
+    print(Tlist)
+    #0.2 = (1-np.exp(-(data1[0]/tau)^(n)))
+    #0
+
     pass
