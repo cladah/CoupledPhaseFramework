@@ -50,6 +50,7 @@ def TCequalibrium(type):
         return activityC, activityN
 
 def TCcarbonitriding(activityair):
+    from HelpFile import read_input
     data = read_input()
     with TCPython() as session:
         system = (session
@@ -140,7 +141,7 @@ def calculateCCT(composition):
             #.disable_global_minimization()
         )
         TTT = calculation.with_ttt_precipitation_calculation()
-            TTT.set_composition()
+            #TTT.set_composition()
         ttt_results = (calculation.with_ttt_precipitation_calculation()
                        .set_composition_unit(CompositionUnit.MASS_FRACTION)
                        .set_composition("C", 10)
