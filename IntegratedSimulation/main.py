@@ -1,6 +1,6 @@
 from Inputfile import createmodelinput
 from Quenching import runquenching
-#from Carbonitriding import runcarbonitriding
+from Carbonitriding import runcarbonitriding
 #from CCT import runCCT
 from Solvers.TTTmodelfit import TTTfit
 from Mesh import createMesh
@@ -21,7 +21,7 @@ def start():
     inputvariable = 'Run'
     if inputvariable == 'Run':
         createMesh()
-        # runcarbonitriding()
+        runcarbonitriding()
         # runCCT()
         TTTfit()
         # runquenching()
