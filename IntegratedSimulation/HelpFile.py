@@ -140,19 +140,20 @@ def resetcalculations():
     createcachfile()
 
 
-def createresultfile(modelvar):
+def createresultfile():
     import h5py
     cachename = "Result.hdf5"
-    tmpinfo = [modelvar["E"]]
     with h5py.File(cachename, "w") as f:
-        info = f.create_dataset("Info",data=tmpinfo)
         CNcurves = f.create_dataset("CNcurves",data=0)
         displacements = f.create_dataset("displacement",data= 0)
 
 def saveresult(dataname,data):
     import h5py
     with h5py.File("Result.hdf5", "r+") as f:
-        del f[dataname]
+        try:
+            del f[dataname]
+        except:
+            pass
         f.create_dataset(dataname, data=data)
 
 def readresultfile(dataname):

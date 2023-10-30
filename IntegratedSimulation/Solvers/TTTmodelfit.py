@@ -1,4 +1,6 @@
 def TTTfit():
+    print("TTTFitting module")
+    from HelpFile import saveresult
     import csv
     import scipy
     import numpy as np
@@ -30,10 +32,11 @@ def TTTfit():
             tmpdata = np.delete(tmpdata,deleteindex,1)
             data[x] = list(np.float_(tmpdata))
             #[i for i, x in enumerate(TTdata) if x == "whatever"]
-            if x =='Martensite start':
+            if x =='Temperature [K]':
                 break
     plt.xscale("log")
     legend = list()
+    print(header)
     for x in header:
         if x == 'Temperature [K]':
             break
@@ -43,29 +46,55 @@ def TTTfit():
         #plt.plot(xpoints, ypoints)
     #plt.legend(legend)
     #plt.show()
-    #JMAKfit(data['Start time (2% pearlite)'], data['Half time (50% pearlite)'], data['Finish time (98% pearlite)'])
+    perlite, bainite = dict(), dict()
+    perlite["T"], perlite["n"], perlite["tau"] = JMAKfit(data['Start time (2% pearlite)'], data['Half time (50% pearlite)'], data['Finish time (98% pearlite)'])
+    bainite["T"], bainite["n"], bainite["tau"] = JMAKfit(data['Start time (2% bainite)'], data['Half time (50% bainite)'], data['Finish time (98% bainite)'])
+    martensite = KMfit(400,300,200)
+    # Tfer, nfer, taufer = JMAKfit(data['Ferrite start'], data['Ferrite half'], data['Ferrite finish'])
+    # print(Tfer)
+
+    #xpoints = -tauper * (-np.log(0.98)) ** (1 / nper)
+    #ypoints = Tper
+    #plt.plot(xpoints, ypoints)
+    #xpoints = -taubai * (-np.log(0.98)) ** (1 / nbai)
+    #ypoints = Tbai
+    #plt.plot(xpoints, ypoints)
+    #plt.xscale("log")
+    #plt.show()
+
+    saveresult("JMAK_perlite", [perlite["T"], perlite["n"], perlite["tau"]])
+    saveresult("JMAK_bainite", [bainite["T"], bainite["n"], bainite["tau"]])
 def JMAKfit(data1,data2,data3):
+    import matplotlib.pyplot as plt
     import numpy as np
-    tau = list()
-    n = list()
-    Tlist = list()
-    tmpdata = list()
+    tau = np.array([])
+    n = np.array([])
+    Tlist = np.array([])
     for x in data1[1]:
-       if np.where(data3[1]==x)[0].size!=0:
+        i = np.where(data3[1] == x)[0]
+        j = np.where(data1[1] == x)[0]
+        if i.size==0 or j.size==0:
+            pass
+        elif data1[0][j[0]]==data3[0][i[0]]:
+            pass
+        else:
+            i = i[0]
+            j = j[0]
+            #print("T =", data3[1][i], data1[1][j])
+            #print("x1 = ", data1[0][j])
+            #print("x2 = ", data3[0][i])
+            tmpn = np.log(np.log(0.98)/np.log(0.02))/np.log(data1[0][j]/data3[0][i])
+            #print("n = ", tmpn)
+            #print("tau = ", data1[0][j]/(-np.log(0.98))**(1/tmpn))
+            tmptau = - data1[0][j]/(-np.log(0.98))**(1/tmpn)
+            n = np.append(n, tmpn)
+            tau = np.append(tau, tmptau)
+            Tlist = np.append(Tlist, x)
+    return Tlist, n, tau
 
-           i = np.where(data3[1] == x)[0][0]
-           print(data3[0][i])
-           print(data1[0][i])
-           print(np.log(0.98-0.02))
-           tmpn = np.log(np.log(0.98-0.02)-data1[1][i]/data3[1][i])
-           print(tmpn)
-           print(x)
-           tmptau = - x/np.log(0.02)^(1/tmpn)
-           n.append(tmpn)
-           tau.append(tmptau)
-           Tlist.append(x)
-    print(Tlist)
-    #0.2 = (1-np.exp(-(data1[0]/tau)^(n)))
-    #0
-
+def KMfit(data1,data2,data3):
+    import numpy as np
+    def objective(x, Ms, beta):
+        return 1 - np.exp(-beta * (Ms - x))
+    # 0.02 = 1- exp(-beta * (Ms - data1))
     pass

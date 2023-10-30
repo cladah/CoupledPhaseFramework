@@ -20,6 +20,7 @@ def start():
     #inputvariable = input('What do you want to do? ')
     inputvariable = 'Run'
     if inputvariable == 'Run':
+        createresultfile()
         createMesh()
         runcarbonitriding()
         # runCCT()
@@ -28,6 +29,7 @@ def start():
         # runtempering()
         # runfatiguetest()
         # runplot()
+        print(readresultfile("JMAK_perlite"))
         print('Simulation done')
         print('Caching data')
         #createinputcache()
