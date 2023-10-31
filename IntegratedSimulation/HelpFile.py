@@ -141,6 +141,12 @@ def resetcalculations():
 
 
 def createresultfile():
+    data = read_input()
+    # Composition / point
+    geo = [1 * 0.9**i for i in range(data['Geometry']['nodes'])]
+    x = [1 * data['Geometry']['meshscaling']**i for i in range(data['Geometry']['nodes'])]*np.linspace(0,1,data['Geometry']['nodes'])
+    x = data['Geometry']['radius']*x/x[-1]
+    # Mesh
     import h5py
     cachename = "Result.hdf5"
     with h5py.File(cachename, "w") as f:

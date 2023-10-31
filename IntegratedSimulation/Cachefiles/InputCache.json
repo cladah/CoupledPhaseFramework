@@ -1,8 +1,9 @@
 {
   "Rerun": {
     "Mesh": 1,
-    "Carbonitiding": 0,
+    "Carbonitriding": 0,
     "CCT": 0,
+    "ThermoFit": 0,
     "Quench": 0,
     "Temp": 0,
     "Fatigue": 0
@@ -11,7 +12,7 @@
     "radius": 0.01,
     "innerradius": 0.0,
     "thickness": 0.01,
-    "nodes": 20,
+    "nodes": 50,
     "meshscaling": 0.9
   },
   "Material": {
@@ -19,7 +20,8 @@
     "Dependentmat": "Fe",
     "Composition": {
       "C": 0.2,
-      "N": 0.025
+      "N": 0.025,
+      "Cr": 1.6
     },
     "E": 200.0,
     "rho": 7800.0,

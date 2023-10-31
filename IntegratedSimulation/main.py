@@ -14,14 +14,13 @@ from HelpFile import *
 #import h5py
 #from Post_processing import *
 
-
 def start():
     import matplotlib.pyplot as plt
     # --------------- Input ------------------#
     #inputvariable = input('What do you want to do? ')
     inputvariable = 'Run'
     if inputvariable == 'Run':
-        # createresultfile()
+        createresultfile()
         createMesh()
         runcarbonitriding()
         runCCT()
