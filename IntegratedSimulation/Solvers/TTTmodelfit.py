@@ -65,7 +65,6 @@ def TTTfit():
     saveresult("JMAK_perlite", [perlite["T"], perlite["n"], perlite["tau"]])
     saveresult("JMAK_bainite", [bainite["T"], bainite["n"], bainite["tau"]])
 def JMAKfit(data1,data2,data3):
-    import matplotlib.pyplot as plt
     import numpy as np
     tau = np.array([])
     n = np.array([])
@@ -75,17 +74,12 @@ def JMAKfit(data1,data2,data3):
         j = np.where(data1[1] == x)[0]
         if i.size==0 or j.size==0:
             pass
-        elif data1[0][j[0]]==data3[0][i[0]]:
+        elif data1[0][j[0]] == data3[0][i[0]]:
             pass
         else:
             i = i[0]
             j = j[0]
-            #print("T =", data3[1][i], data1[1][j])
-            #print("x1 = ", data1[0][j])
-            #print("x2 = ", data3[0][i])
             tmpn = np.log(np.log(0.98)/np.log(0.02))/np.log(data1[0][j]/data3[0][i])
-            #print("n = ", tmpn)
-            #print("tau = ", data1[0][j]/(-np.log(0.98))**(1/tmpn))
             tmptau = - data1[0][j]/(-np.log(0.98))**(1/tmpn)
             n = np.append(n, tmpn)
             tau = np.append(tau, tmptau)

@@ -24,11 +24,15 @@ def modelfitting(model, x, y):
 
 
 def runCCT():
+
     from Solvers.Thermocalc import calculateCCT
     import h5py
     import matplotlib.pyplot as plt
     import numpy as np
-    from HelpFile import read_input
+    from HelpFile import read_input, saveresult, checkinput
+    if checkinput('CCT'):
+        print('Using precalculated TTT simulation')
+        return
     print('CCT module')
     data = read_input()
     with h5py.File("Resultfiles/ThermoResult.hdf5", "r") as f:
@@ -40,23 +44,34 @@ def runCCT():
     composition = data['Material']['Composition']
     composition['C'] = a['C'][-1]
     composition['N'] = a['N'][-1]
-    calculateCCT(composition)
+
+    start, half, finish = calculateBainite(np.linspace(300,1000,10))
+    saveresult("TTT/Surface/Bainite/Start", start)
+    saveresult("TTT/Surface/Bainite/Half", half)
+    saveresult("TTT/Surface/Bainite/Finish", finish)
+
+    #start, half, finish = calculatePerlite()
+    #saveresult("TTT/Surface/Perlite/Start", start)
+    #saveresult("TTT/Surface/Perlite/Half", half)
+    #saveresult("TTT/Surface/Perlite/Finish", finish)
+
+    #calculateCCT(composition)
     #Ccurve = np.array(f.get("CNcurves/C"))
     #Ncurve = np.array(f.get("CNcurves/N"))
     #plt.plot(Ccurve)
     #plt.plot(Ncurve)
     #plt.legend(data['Material']['Composition'].keys(), loc='upper left')
     #plt.show()
-    x = [239.7, 126.4, 73.5, 53.0, 55.6, 67.6, 68.1, 90.6, 185.0, 838.0]
-    y = [780, 800, 820, 840, 860, 880, 900, 920, 940, 960]
-    Perlite = modelfitting('JMAK', x, y)
-    print(Perlite)
-    T_new = np.linspace(700,1000,50)
-    t_new = Perlite(T_new).T
+    #x = [239.7, 126.4, 73.5, 53.0, 55.6, 67.6, 68.1, 90.6, 185.0, 838.0]
+    #y = [780, 800, 820, 840, 860, 880, 900, 920, 940, 960]
+    #Perlite = modelfitting('JMAK', x, y)
+    #print(Perlite)
+    #T_new = np.linspace(700,1000,50)
+    #t_new = Perlite(T_new).T
 
-    plt.plot(x, y)
-    plt.plot(t_new, T_new)
-    plt.show()
+    #plt.plot(x, y)
+    #plt.plot(t_new, T_new)
+    #plt.show()
     #Martensite = modelfitting(data['Material']['Martensite']['model'], [1, 1], 2)
     #Perlite = modelfitting(data['Material']['Perlite']['model'], [1, 1], [1, 1])
     #Bainite = modelfitting(data['Material']['Bainite']['model'], [1, 1], [1, 1])

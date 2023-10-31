@@ -4,7 +4,7 @@ import h5py
 
 def runcarbonitriding():
     if checkinput('Carbonitriding'):
-        print('Using old carbnitriding simulation')
+        print('Using precalculated carbnitriding simulation')
         return
     print('Carbonitriding module')
     data = read_input()

@@ -117,13 +117,14 @@ def setmaterial(data,type):
 
     return env_dep, env_comp
 
-def calculateCCT(composition):
+def calculateCCT():
     from HelpFile import read_input
     data = read_input()
 
     database = "TCFE12"
     kineticdatabase = "TCFE12"
     dependentmat = data['Material']["Dependentmat"]
+    composition = data['Material']["Compositon"]
     phases = ["FCC_A1", "FCC_A1#2", "GAS", "GRAPHITE_A9"]
     dormantphases = ["GAS", "GRAPHITE_A9"]
     referencestates = {"C": "Graphite_A9", "N": "GAS"}
@@ -167,3 +168,95 @@ def calculateCCT(composition):
                        .calculate()  # Aktiverar beräkningen
                        )
         return
+def calculatePerlite():
+    from HelpFile import read_input
+    print("Perlite model")
+    data = read_input()
+    database = "TCFE12"
+    kindatabase = "MOBFE7"
+    dependentmat = data['Material']["Dependentmat"]
+    composition = data['Material']["Composition"]
+    phases = ["FCC_A1"]
+    temperatures = [400,500,600,700,800]
+    #phases = ["FCC_A1", "FCC_A1#2", "GAS", "GRAPHITE_A9"]
+    #dormantphases = ["GAS", "GRAPHITE_A9"]
+    #referencestates = {"C": "Graphite_A9", "N": "GAS"}
+
+
+    with TCPython() as start:
+        # create and configure a single equilibrium calculation
+        calculation = (
+            start
+            .select_thermodynamic_and_kinetic_databases_with_elements(database,kindatabase,[dependentmat] + list(composition))
+            .deselect_phase("*")
+            .select_phase("FCC_A1")
+            .select_phase("BCC_A2")
+            .select_phase("CEMENTITE")
+            .get_system()
+            .with_property_model_calculation("Pearlite").set_temperature(1000).set_composition_unit(CompositionUnit.MASS_PERCENT)
+            #.set_argument()
+        )
+        for element in composition:
+            calculation.set_composition(element, composition[element]/100)
+        print("Available arguments: {}".format(calculation.get_arguments()))
+        startvalue = list()
+        for x in temperatures:
+            calculation.set_temperature(x)
+            calc_result = (calculation
+                           .calculate()  # Aktiverar beräkningen
+                           )
+            startvalue.append(calc_result.get_value_of("Start"))
+        print("Available result quantities: {}".format(calc_result.get_result_quantities()))
+        print(startvalue)
+        #'GrainSize', 'Criterion', 'PearliteMode', 'Austenite composition from', 'Austenitizing temperature'
+        #for phase in phases:
+        #    calculation.set_phase_to_entered(phase)
+        #for phase in dormantphases:
+        #    calculation.set_phase_to_dormant(phase)
+        #for element in referencestates:
+        #    calculation.with_reference_state(element,referencestates[element])
+        return
+def calculateBainite(temperatures):
+    print("Bainite model")
+    from HelpFile import read_input
+    data = read_input()
+    database = "TCFE12"
+    kindatabase = "MOBFE7"
+    dependentmat = data['Material']["Dependentmat"]
+    composition = data['Material']["Composition"]
+    phases = ["FCC_A1"]
+
+    with TCPython() as start:
+        calculation = (
+            start
+            .select_thermodynamic_and_kinetic_databases_with_elements(database, kindatabase,
+                                                                      [dependentmat] + list(composition))
+            .deselect_phase("*")
+            .select_phase("FCC_A1")
+            .select_phase("BCC_A2")
+            .select_phase("CEMENTITE")
+            .get_system()
+            .with_property_model_calculation("Bainite").set_temperature(1000).set_composition_unit(CompositionUnit.MASS_PERCENT)
+            # .set_argument()
+        )
+        for element in composition:
+            calculation.set_composition(element, composition[element])
+
+        #print("Available arguments: {}".format(calculation.get_arguments()))
+        starttime, halftime, finishtime = list(), list(), list()
+        for x in temperatures:
+            calc_result = (calculation.set_temperature(x)
+                           .calculate()  # Aktiverar beräkningen
+                           )
+            starttime.append(calc_result.get_value_of("Start time (2% bainite)"))
+            halftime.append(calc_result.get_value_of("Half time (50% bainite)"))
+            finishtime.append(calc_result.get_value_of("Finish time (98% bainite)"))
+        #print("Available result quantities: {}".format(calc_result.get_result_quantities()))
+    return starttime, halftime, finishtime
+def calculateMartensite():
+    print("Martensite model")
+    # Martensite Temperatures
+    pass
+def yieldStrength():
+    # Yield Strength
+    pass

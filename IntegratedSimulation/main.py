@@ -1,7 +1,7 @@
 from Inputfile import createmodelinput
 from Quenching import runquenching
 from Carbonitriding import runcarbonitriding
-#from CCT import runCCT
+from CCT import runCCT
 from Solvers.TTTmodelfit import TTTfit
 from Mesh import createMesh
 from Post_processing import runplot
@@ -16,10 +16,56 @@ from HelpFile import *
 
 
 def start():
+    import matplotlib.pyplot as plt
     # --------------- Input ------------------#
     #inputvariable = input('What do you want to do? ')
     inputvariable = 'Run'
     if inputvariable == 'Run':
+        # createresultfile()
+        createMesh()
+        runcarbonitriding()
+        runCCT()
+        # TTTfit()
+        # runquenching()
+        # runtempering()
+        # runfatiguetest()
+        # runplot()
+        print(readresultfile("TTT/Surface/Bainite/Start"))
+        print(readresultfile("TTT/Surface/Bainite/Half"))
+        print(readresultfile("TTT/Surface/Bainite/Finish"))
+        plt.plot(readresultfile("TTT/Surface/Bainite/Start"),np.linspace(300,1000,10))
+        plt.xscale("log")
+        plt.show()
+        return
+
+
+        print(readresultfile("JMAK_perlite"))
+        Tbai,nbai,taubai = readresultfile("JMAK_bainite")
+        Tper, nper, tauper = readresultfile("JMAK_perlite")
+        xpoints = -tauper * (-np.log(0.98)) ** (1 / nper)
+        ypoints = Tper
+        if 1==1:
+            plt.plot(xpoints, ypoints)
+            xpoints = -tauper * (-np.log(0.02)) ** (1 / nper)
+            ypoints = Tper
+            plt.plot(xpoints, ypoints)
+            xpoints = -taubai * (-np.log(0.98)) ** (1 / nbai)
+            xpoints = np.append(xpoints, 5000 * (-np.log(0.98)) ** (1 / 4))
+            ypoints = np.append(Tbai, 1000)
+            plt.plot(xpoints, ypoints)
+            #xpoints = -taubai * (-np.log(0.02)) ** (1 / nbai)
+            #ypoints = Tbai
+            #plt.plot(xpoints, ypoints)
+            plt.xscale("log")
+            plt.show()
+        plt.plot(Tper,tauper)
+        plt.show()
+        print('Simulation done')
+        print('Caching data')
+        #createinputcache()
+
+
+    elif inputvariable == "Test":
         createresultfile()
         createMesh()
         runcarbonitriding()
@@ -29,13 +75,6 @@ def start():
         # runtempering()
         # runfatiguetest()
         # runplot()
-        print(readresultfile("JMAK_perlite"))
-        print('Simulation done')
-        print('Caching data')
-        #createinputcache()
-
-
-    elif inputvariable == "Test":
         pass
         #data = readCNfile()
         #createMesh()
