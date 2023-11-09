@@ -153,6 +153,38 @@ def createresultfile():
         CNcurves = f.create_dataset("CNcurves",data=0)
         displacements = f.create_dataset("displacement",data= 0)
 
+def createdatastream():
+    data = read_input()
+    # Geometry
+    geometry = range(data['Geometry']['nodes'])/data['Geometry']['nodes']
+    # Composition / x-points
+    comp0 = data['Material']['Composition']
+    comp0list = list()
+    for key in comp0.keys():
+        comp0list.append(comp0[key])
+    composition = [comp0list for i in range(data['Geometry']['nodes'])]
+    # Temperature
+    temperature = data['Geometry']['nodes']*[data['Thermo']['CNtemp']]
+    # Phase fractions
+    phases = [[1, 0, 0, 0] for i in range(data['Geometry']['nodes'])]
+    # Empty parameter lists
+    displacement = data['Geometry']['nodes'] * [0]
+    TTT = data['Geometry']['nodes'] * [None]
+    eps_pl = data['Geometry']['nodes'] * [0]
+    eps_tr = data['Geometry']['nodes'] * [0]
+
+    import h5py
+    cachename = "Datastream.hdf5"
+    with h5py.File(cachename, "w") as f:
+        f.create_dataset("geometry", data=geometry)
+        f.create_dataset("composition", data=composition)
+        f.create_dataset("temperature", data=temperature)
+        f.create_dataset("phases", data=phases)
+        f.create_dataset("TTT", data=TTT)
+        f.create_dataset("displacement", data=displacement)
+        f.create_dataset("plasticstrain", data=eps_pl)
+        f.create_dataset("tripstrain", data=eps_tr)
+
 def saveresult(dataname,data):
     import h5py
     with h5py.File("Result.hdf5", "r+") as f:
